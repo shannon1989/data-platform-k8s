@@ -64,49 +64,41 @@ data-platform-k8s/
 ├── examples/     # Example Spark jobs and ETL pipelines
 ├── docs/         # Architecture and design documents
 └── env/          # Environment-specific configs (local/dev/prod)
+```
+
+---
 
 
-⚡ Quick Start (Local)
+## 🎯 Design Goals
 
-Prerequisites: Docker, Minikube, kubectl, Helm
+- Production-oriented: avoids shortcuts that break in real clusters
 
-minikube start
-kubectl apply -f infra/
-kubectl apply -f apps/
+- Modular & extensible: easy to add ClickHouse, Trino, Flink, etc.
 
+- Local-first: everything can run on a laptop using Minikube (config required)
 
-Port-forward scripts and one-click deployment helpers are provided under scripts/.
+- GitOps-friendly: declarative configs and reproducible deployments
 
-🎯 Design Goals
+## 📌 Use Cases
 
-Production-oriented: avoids shortcuts that break in real clusters
+- End-to-end data engineering demos
 
-Modular & extensible: easy to add ClickHouse, Trino, Flink, etc.
+- Kubernetes-native Spark & Airflow integration
 
-Local-first: everything can run on a laptop using Minikube
+- Streaming + batch hybrid pipelines
 
-GitOps-friendly: declarative configs and reproducible deployments
+- Portfolio project for Data Engineer / Platform Engineer roles
 
-📌 Use Cases
+## 🛠️ Future Enhancements
 
-End-to-end data engineering demos
+- ClickHouse / Trino integration
 
-Kubernetes-native Spark & Airflow integration
+- Data quality checks
 
-Streaming + batch hybrid pipelines
+- Monitoring with Prometheus & Grafana
 
-Portfolio project for Data Engineer / Platform Engineer roles
+- CI/CD for image builds and deployments
 
-🛠️ Future Enhancements
-
-ClickHouse / Trino integration
-
-Data quality checks
-
-Monitoring with Prometheus & Grafana
-
-CI/CD for image builds and deployments
-
-📄 License
+## 📄 License
 
 MIT License
