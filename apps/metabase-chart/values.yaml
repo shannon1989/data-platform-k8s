@@ -1,0 +1,26 @@
+metabase:
+  image: 
+    repository: metabase-with-clickhouse
+    tag: "0.49.6"
+    pullPolicy: IfNotPresent
+  replicas: 1
+
+  env:
+    MB_DB_TYPE: postgres
+    MB_DB_DBNAME: metabase
+    MB_DB_PORT: 5432
+    MB_DB_USER: metabase
+    MB_DB_PASS: metabase
+    MB_DB_HOST: metabase-postgres
+
+postgres:
+  image: postgres:15
+  storage: 10Gi
+  user: metabase
+  password: metabase
+  database: metabase
+
+service:
+  type: NodePort
+  port: 3000
+  nodePort: 30000

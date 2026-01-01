@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metabase
+spec:
+  replicas: {{ .Values.metabase.replicas }}
+  selector:
+    matchLabels:
+      app: metabase
+  template:
+    metadata:
+      labels:
+        app: metabase
+    spec:
+      containers:
+        - name: metabase
+          image: "{{ .Values.metabase.image.repository }}:{{ .Values.metabase.image.tag }}"
+          imagePullPolicy: {{ .Values.metabase.image.pullPolicy }}
+          env:
+{{- range $key, $value := .Values.metabase.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+{{- end }}
+          ports:
+            - containerPort: 3000

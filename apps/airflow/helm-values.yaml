@@ -1,0 +1,77 @@
+executor: "KubernetesExecutor"
+
+dags:
+  persistence:
+    enabled: false # (1)
+
+  gitSync:
+    enabled: true
+    repo: ssh://git@ssh.github.com:443/shannon1989/data-analytics-platforms.git # (2)
+    branch: "main"
+    rev: HEAD
+    depth: 1
+    wait: 60  # Sync every 60 seconds
+    subPath: "dags" # (3)
+    containerName: "git-sync"
+    sshKeySecret: "airflow-git-ssh-key-secret" # (4)
+    #(5)
+    knownHosts: |
+      ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+
+
+redis:
+  enabled: false  # Celery backend not needed for KubernetesExecutor
+
+
+postgresql:
+  enabled: true
+
+  image:
+    repository: bitnamilegacy/postgresql
+    tag: 16.1.0-debian-11-r15
+
+  auth:
+    enablePostgresUser: true
+    username: "airflowuser"
+    database: airflow
+    existingSecret: airflow-postgresql-credentials
+
+data:
+  metadataConnection:
+    user: airflowuser
+    pass: airflow_db_password
+    protocol: postgresql+psycopg2
+    host: airflow-postgresql
+    port: 5432
+    db: airflow
+
+triggerer:
+  replicas: 1
+  persistence:
+    size: 5Gi
+
+config:
+  logging:
+    remote_logging: "True"
+    remote_base_log_folder: "s3://airflow-logs"
+    remote_log_conn_id: "minio_conn"
+    encrypt_s3_logs: "False"
+
+# 把 logging 配置通过 ENV 注入到所有组件
+env:
+  - name: AIRFLOW__LOGGING__REMOTE_LOGGING
+    value: "True"
+  - name: AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER
+    value: "s3://airflow-logs"
+  - name: AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID
+    value: "minio_conn"
+  - name: AIRFLOW__LOGGING__ENCRYPT_S3_LOGS
+    value: "False"
+  - name: AWS_ACCESS_KEY_ID
+    value: minioadmin
+  - name: AWS_SECRET_ACCESS_KEY
+    value: minioadmin
+  - name: AWS_ENDPOINT_URL
+    value: http://minio:9000
+  - name: AWS_DEFAULT_REGION
+    value: us-east-1

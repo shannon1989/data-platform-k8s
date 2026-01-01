@@ -98,7 +98,3 @@ data-platform-k8s/
 - Monitoring with Prometheus & Grafana
 
 - CI/CD for image builds and deployments
-
-## 📄 License
-
-MIT License

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter-pyspark
+  namespace: airflow  # 你可以选择在 airflow namespace 中启动
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyter-pyspark
+  template:
+    metadata:
+      labels:
+        app: jupyter-pyspark
+    spec:
+      containers:
+        - name: jupyter-pyspark
+          image: pyspark-minio:latest
+          imagePullPolicy: IfNotPresent # use local customed image first
+          ports:
+            - containerPort: 8888
+          volumeMounts:
+            - name: pyspark-notebook-data
+              mountPath: /home/jovyan/work
+      volumes:
+        - name: pyspark-notebook-data
+          persistentVolumeClaim:
+            claimName: pvc-pyspark-notebook-data  # 你可以根据需要配置 PVC 来持久化数据
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-pyspark
+  namespace: airflow  # 保持与 Deployment 同一 namespace
+spec:
+  ports:
+    - port: 8888
+      targetPort: 8888
+  selector:
+    app: jupyter-pyspark

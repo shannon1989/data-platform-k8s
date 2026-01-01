@@ -1,0 +1,6 @@
+apiVersion: v2
+name: metabase
+description: Metabase with embedded Postgres for metadata
+type: application
+version: 0.1.0
+appVersion: "0.49.6"

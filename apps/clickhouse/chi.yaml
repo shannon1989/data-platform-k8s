@@ -1,0 +1,52 @@
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: analytics-ch
+  namespace: clickhouse-operator
+spec:
+  defaults:
+    templates:
+      podTemplate: ch-pod
+      dataVolumeClaimTemplate: ch-data
+
+  configuration:
+    zookeeper:
+      nodes:
+        - host: keeper-keeper # service name from kubectl get svc -n clickhouse-operator
+          port: 2181
+
+    clusters:
+      - name: analytics
+        layout:
+          shardsCount: 1
+          replicasCount: 2
+
+    users:
+        metabase/password: metabase_password
+        metabase/profile: default
+        metabase/quota: default
+        metabase/networks/ip:
+          - 0.0.0.0/0
+
+  templates:
+    podTemplates:
+      - name: ch-pod
+        spec:
+          containers:
+            - name: clickhouse
+              image: clickhouse/clickhouse-server:24.3
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "2Gi"
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"
+
+    volumeClaimTemplates:
+      - name: ch-data
+        spec:
+          accessModes: [ "ReadWriteOnce" ]
+          resources:
+            requests:
+              storage: 50Gi

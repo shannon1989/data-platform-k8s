@@ -1,0 +1,54 @@
+FROM apache/spark:3.5.1-scala2.12-java11-python3-ubuntu
+
+USER root
+
+# ===============================
+# 1️⃣ 安装系统依赖
+# ===============================
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    python3-pip \
+    netcat \
+    dnsutils \
+    iproute2 \
+ && rm -rf /var/lib/apt/lists/*
+
+# ===============================
+# 2️⃣ 安装 Python 依赖
+# ===============================
+RUN pip3 install --no-cache-dir \
+    delta-spark==3.1.0 \
+    pyspark==3.5.1 \
+    boto3 \
+    s3fs \
+    pyarrow
+
+# ===============================
+# 3️⃣ 安装 Hadoop AWS / AWS SDK
+# ===============================
+ENV HADOOP_VERSION=3.3.6
+
+RUN curl -fSL https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar \
+    -o /opt/spark/jars/hadoop-aws-${HADOOP_VERSION}.jar && \
+    curl -fSL https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.662/aws-java-sdk-bundle-1.12.662.jar \
+    -o /opt/spark/jars/aws-java-sdk-bundle-1.12.662.jar
+
+# ===============================
+# 4️⃣ 安装 Delta Lake JAR
+# ===============================
+RUN curl -fSL https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.1.0/delta-spark_2.12-3.1.0.jar \
+    -o /opt/spark/jars/delta-spark_2.12-3.1.0.jar && \
+    curl -fSL https://repo1.maven.org/maven2/io/delta/delta-storage/3.1.0/delta-storage-3.1.0.jar \
+    -o /opt/spark/jars/delta-storage-3.1.0.jar
+
+# ===============================
+# 5️⃣ 网络 & 本地调试友好
+# ===============================
+ENV SPARK_LOG_DIR=/opt/spark/logs
+RUN mkdir -p /opt/spark/logs && chmod -R 777 /opt/spark/logs
+
+# ===============================
+# 6️⃣ 回到 spark 用户（安全）
+# ===============================
+USER spark
