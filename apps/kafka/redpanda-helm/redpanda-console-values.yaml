@@ -1,0 +1,45 @@
+replicaCount: 1
+
+image:
+  registry: docker.redpanda.com
+  repository: redpandadata/console
+  tag: v2.6.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+config:
+  kafka:
+    brokers:
+      - kafka-kafka-bootstrap.kafka.svc:9092
+    clientId: redpanda-console
+
+  server:
+    listenPort: 8080
+
+podAnnotations:
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
