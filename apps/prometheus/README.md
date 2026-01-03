@@ -11,7 +11,7 @@ kubectl create ns prometheus
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 ```
-## 3. update default values from chart
+## 3. update default values from chart (k3s cluster only)
   !Default values for Grafana Readiness: (failed in 30 seconds before all containers inside the pod are ready )
   `delay=0s timeout=1s period=10s #success=1 #failure=3`
 ```YAML

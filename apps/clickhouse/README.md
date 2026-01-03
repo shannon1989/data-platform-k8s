@@ -19,7 +19,8 @@ helm install clickhouse-operator altinity/altinity-clickhouse-operator -n clickh
 
 ## 4. Defin ClickHouse single shard cluster
 ```TEXT
-chi-single-replica.yaml
+keeper.yaml
+chi.yaml
 ```
 
 **How to install ss, ping, nc inside POD:**

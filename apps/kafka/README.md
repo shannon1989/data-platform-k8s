@@ -23,9 +23,20 @@ helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator \
   - kafka-controller.yaml
   - kafka-broker.yaml
 
-## 4. Install Kafka cluster -> controller -> broker
+## 4. Install Kafka cluster, controller, broker
 ```bash
-kubectl apply -f kafka-cluster.yaml
-kubectl apply -f kafka-controller.yaml
-kubectl apply -f kafka-broker.yaml
+kubectl apply -f .
+```
+
+# redpand install
+add helm repo
+```bash
+helm repo add redpanda https://charts.redpanda.com
+helm repo update
+```
+
+```bash
+helm install redpanda-console redpanda/console \
+  -n kafka \
+  -f values.yaml
 ```
