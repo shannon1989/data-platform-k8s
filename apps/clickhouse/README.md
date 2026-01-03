@@ -23,6 +23,6 @@ keeper.yaml
 chi.yaml
 ```
 
-**How to install ss, ping, nc inside POD:**
+**How to install ss, ping, nc inside POD for debuging:**
 apt-get update && \
 apt-get install -y iproute2 iputils-ping netcat-openbsd
