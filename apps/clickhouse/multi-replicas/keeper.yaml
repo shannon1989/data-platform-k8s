@@ -2,7 +2,7 @@ apiVersion: clickhouse-keeper.altinity.com/v1
 kind: ClickHouseKeeperInstallation
 metadata:
   name: keeper
-  namespace: clickhouse-operator
+  namespace: clickhouse
 spec:
   configuration:
     clusters:

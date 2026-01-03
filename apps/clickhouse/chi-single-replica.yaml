@@ -1,0 +1,38 @@
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: analytics-ch
+  namespace: clickhouse
+spec:
+  defaults:
+    templates:
+      podTemplate: ch-pod
+
+  configuration:
+    clusters:
+      - name: analytics
+        layout:
+          shardsCount: 1 # shards的作用是什么：数据分片，提高数据分布和查询性能
+          replicasCount: 1  # 每个shard内的副本数，提供高可用性和负载均衡, replicasCount > 1 时需要配置ZooKeeper
+
+    users:
+        metabase/password: metabase_password
+        metabase/profile: default
+        metabase/quota: default
+        metabase/networks/ip:
+          - 0.0.0.0/0
+
+  templates:
+    podTemplates:
+      - name: ch-pod
+        spec:
+          containers:
+            - name: clickhouse
+              image: clickhouse/clickhouse-server:24.3
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "2Gi"
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"

@@ -1,6 +1,6 @@
 # data-platform-k8s
 
-A production-ready data platform on Kubernetes integrating batch and streaming processing, object storage, and BI visualization.
+A simulation of production data platform on Kubernetes integrating batch and streaming processing, object storage, and BI visualization.
 
 ---
 
@@ -56,10 +56,8 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
 
 ```text
 data-platform-k8s/
-├── infra/        # Kubernetes namespaces, RBAC, storage
 ├── apps/         # Airflow, Spark, Kafka, MinIO, Metabase, Jupyter
 ├── images/       # Custom Docker images (Spark, Jupyter, Airflow)
-├── helm/         # Helm charts and values
 ├── scripts/      # Deployment and operational scripts
 ├── examples/     # Example Spark jobs and ETL pipelines
 ├── docs/         # Architecture and design documents
