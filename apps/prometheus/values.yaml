@@ -1,0 +1,13 @@
+grafana:
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 30 # Wait longer before starting checks
+    timeoutSeconds: 10
+    failureThreshold: 5
+
+  sidecar:
+    datasources:
+      enabled: true
+      defaultDatasourceEnabled: false # Do not create Prometheus datasource by default

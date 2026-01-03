@@ -1,21 +1,44 @@
-安装 kube-prometheus-stack
+# Install and config Promethues/Grafana
+
+
+## 1. Create prometheus namespace
+```bash
+kubectl create ns prometheus
+```
+
+## 2. Add repo from kube-prometheus-stack
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 ```
+## 3. update default values from chart
+```YAML
+grafana:
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    initialDelaySeconds: 30 # Wait longer before starting checks
+    timeoutSeconds: 10
+    failureThreshold: 5
 
-```bash
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  -n prometheus \
-  --create-namespace
+  sidecar:
+    datasources:
+      enabled: true
+      defaultDatasourceEnabled: false # Do not create Prometheus datasource by default
 ```
 
-检查安装状态：
-`kubectl --namespace prometheus get pods -l "release=prometheus"`
+## 4. Install prometheus with customerd value
+```bash
+helm install prometheus prometheus-community/kube-prometheus-stack -n prometheus -f values.yaml
+```
 
-获取 Grafana 密码(账号admin)
-`kubectl get secret -n prometheus prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo`
-5AVWqpTRFiGqOlPnPTpfcEd7jwF8kFAQvviCWEYm
+## 5. Get your grafana admin user password
+```bash
+kubectl get secret -n prometheus prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+```
 
-端口转发
-`kubectl port-forward -n prometheus svc/prometheus-grafana 3000:80`
+## 6. Port forward
+```bash
+kubectl port-forward -n prometheus svc/prometheus-grafana 3000:80
+```
