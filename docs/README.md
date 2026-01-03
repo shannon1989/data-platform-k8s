@@ -22,12 +22,6 @@ It covers:
 - Setting up time-series monitoring (Prometheus/Grafana)
 - Setting up CI/CD using Github actions
 
-Study Plan:
-  | Date | Task | Note |
-  |------|------|------|
-  | 2025/12/31 | Airflow Trigger Custom Python Pipeline | Python Call API to extract data and stored in the MinIO | 
-  | 2026/01/01 | Deploy Kafka to ingest the blockchain event stream data | Python Call API to extract data and stored in Kafka | 
-
 ## 1. Prepare the cluster wiht Minikube
 ```bash
 minikube start --cpus=8 --memory=16g
