@@ -56,7 +56,7 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
 
 ```text
 data-platform-k8s/
-├── apps/         # Airflow, Spark, Kafka, MinIO, Metabase, ClickHouse
+├── infra/        # Airflow, Spark, Kafka, MinIO, Metabase, ClickHouse, Prometheus, Grafana
 ├── images/       # Custom Docker images (Spark, ClickHouse, Airflow)
 ├── scripts/      # Deployment and operational scripts
 ├── examples/     # Example Spark jobs and ETL pipelines
