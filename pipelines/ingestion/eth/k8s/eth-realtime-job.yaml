@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eth-block-ingestion-realtime
+  namespace: airflow
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: eth-realtime
+        image: eth-ingestion:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "eth_realtime_watcher.py"]
+        env:
+        - name: ETH_RPC_URL
+          valueFrom:
+            secretKeyRef:
+              name: eth-secrets
+              key: rpc_url

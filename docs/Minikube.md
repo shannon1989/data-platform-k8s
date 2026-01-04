@@ -12,3 +12,6 @@ minikube start
 ```bash
 minikube addons enable metrics-server
 ```
+
+## Check current config
+minikube config view

@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eth-block-ingestion-backfill
+  namespace: airflow
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: eth-backfill
+        image: eth-ingestion:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "eth_backfill_job.py"]
+        env:
+          - name: START_DATE
+            value: "2026-01-01"
+          - name: END_DATE
+            value: "2026-01-01"
+          - name: ETHERSCAN_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: etherscan
+                key: api_key
+          - name: ETH_RPC_URL
+            valueFrom:
+              secretKeyRef:
+                name: eth-secrets
+                key: rpc_url

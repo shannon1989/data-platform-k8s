@@ -44,3 +44,12 @@ kubectl get secret -n prometheus prometheus-grafana -o jsonpath="{.data.admin-pa
 ```bash
 kubectl port-forward -n prometheus svc/prometheus-grafana 3000:80
 ```
+
+## How to restart statefulSet
+```bash
+kubectl rollout restart statefulset prometheus-prometheus-kube-prometheus-prometheus -n prometheus
+```
+## How to restart deployment
+```bash
+kubectl rollout restart deployment prometheus-kube-state-metrics -n prometheus
+```

@@ -22,3 +22,5 @@ charts/
 *.tgz
 
 secret/
+
+uv.lock
