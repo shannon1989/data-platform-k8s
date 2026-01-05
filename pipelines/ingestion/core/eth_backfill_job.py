@@ -190,20 +190,28 @@ def to_json_safe(obj):
     else:
         return obj
 
-TRANSACTIONAL_ID = os.getenv(
-    "TRANSACTIONAL_ID",
-    "eth-backfill-job-1"   # unique per Job
-)
 
 # -----------------------------
-# Kafka Producer (Exactly-once)
+# Resolver for Dagster config, support passing parameters from Dagster
 # -----------------------------
-producer = Producer({
-    "bootstrap.servers": KAFKA_BROKER,
-    "acks": "all",
-    "enable.idempotence": True,
-    "transactional.id": TRANSACTIONAL_ID,
-})
+def run_eth_backfill(
+    transactional_id: str | None = None,
+):
+    if transactional_id is None:
+        transactional_id = os.getenv(
+            "TRANSACTIONAL_ID",
+            "eth-backfill-job-1"
+        )
+
+    # -----------------------------
+    # Kafka Producer (Exactly-once)
+    # -----------------------------
+    producer = Producer({
+        "bootstrap.servers": KAFKA_BROKER,
+        "acks": "all",
+        "enable.idempotence": True,
+        "transactional.id": transactional_id,
+    })
 
 # -----------------------------
 # Web3
@@ -254,7 +262,8 @@ def backfill():
         raise RuntimeError("END_BLOCK must be set")
 
     producer.init_transactions()
-
+    in_transaction = False
+    
     kafka_last = load_last_block_from_kafka()
     start = int(START_BLOCK) if START_BLOCK else (kafka_last + 1 if kafka_last else 0)
     end = int(END_BLOCK)
@@ -267,6 +276,7 @@ def backfill():
 
         try:
             producer.begin_transaction()
+            in_transaction = True
 
             for bn in range(current, batch_end + 1):
                 block = get_block(bn)
@@ -291,6 +301,16 @@ def backfill():
             current = batch_end + 1
 
         except Exception as e:
+            
+            if in_transaction:
+                try:
+                    producer.abort_transaction()
+                except Exception as abort_err:
+                    context.log.warning(
+                        f"Abort transaction failed: {abort_err}"
+                    )
+            raise
+            
             print(f"🔥 abort batch {current}: {e}", flush=True)
             producer.abort_transaction()
             time.sleep(3)

@@ -1,0 +1,12 @@
+[project]
+name = "juptyer-pyspark"
+version = "0.1.0"
+description = "A Jupyter notebook with PySpark support for data and development and testing"
+requires-python = ">=3.11"
+dependencies = [
+    "confluent-kafka>=2.12.2",
+    "dagster>=1.12.8",
+    "dagster-k8s>=0.28.8",
+    "dagster-postgres>=0.28.8",
+    "web3>=7.14.0",
+]

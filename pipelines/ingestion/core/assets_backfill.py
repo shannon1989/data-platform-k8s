@@ -38,7 +38,8 @@ def eth_block_backfill(context: AssetExecutionContext):
     )
 
     producer.init_transactions()
-
+    in_transaction = False
+    
     kafka_last = load_last_block_from_kafka()
     start = start_block if kafka_last is None else max(start_block, kafka_last + 1)
     end = end_block
@@ -53,7 +54,7 @@ def eth_block_backfill(context: AssetExecutionContext):
 
         try:
             producer.begin_transaction()
-
+            in_transaction = True
             for bn in range(current, batch_end + 1):
                 block = get_block(bn)
                 block_dict = to_json_safe(dict(block))
@@ -93,8 +94,12 @@ def eth_block_backfill(context: AssetExecutionContext):
             current = batch_end + 1
 
         except Exception as e:
-            producer.abort_transaction()
-            context.log.error(f"Abort batch {current}: {e}")
+            if in_transaction:
+                try:
+                    producer.abort_transaction()
+                except Exception as abort_err:
+                    context.log.warning(f"Abort batch {current}: {e}")
+            raise
             time.sleep(3)
 
     context.log.info("🎉 Backfill finished")

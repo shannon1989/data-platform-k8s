@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jupyter-pyspark
-  namespace: airflow  # 你可以选择在 airflow namespace 中启动
+  namespace: jupyter-pyspark
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: jupyter-pyspark
-          image: pyspark-minio:latest
+          image: jupyter-pyspark:latest
           imagePullPolicy: IfNotPresent # use local customed image first
           ports:
             - containerPort: 8888
@@ -25,13 +25,13 @@ spec:
       volumes:
         - name: pyspark-notebook-data
           persistentVolumeClaim:
-            claimName: pvc-pyspark-notebook-data  # 你可以根据需要配置 PVC 来持久化数据
+            claimName: pvc-pyspark-notebook-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: jupyter-pyspark
-  namespace: airflow  # 保持与 Deployment 同一 namespace
+  namespace: jupyter-pyspark
 spec:
   ports:
     - port: 8888
