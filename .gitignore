@@ -24,3 +24,5 @@ charts/
 secret/
 
 uv.lock
+
+.vscode
