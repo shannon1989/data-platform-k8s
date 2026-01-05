@@ -8,115 +8,7 @@ from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 from datetime import datetime, timedelta, timezone
 from typing import Tuple
-
-BASE_URL = "https://api.etherscan.io/v2/api?chainid=1"
-
-# -----------------------------
-# Date → unix timestamp (UTC) [start, end)
-# -----------------------------
-def date_to_timestamp(date_str: str, end: bool = False) -> int:
-    """
-    date_str: 'YYYY-MM-DD'
-    end=False  -> Current Date 00:00:00 UTC
-    end=True   -> Next Day 00:00:00 UTC
-    """
-    dt = datetime.strptime(date_str, "%Y-%m-%d")
-    dt = dt.replace(tzinfo=timezone.utc)
-
-    if end:
-        dt = dt + timedelta(days=1)
-
-    return int(dt.timestamp())
-
-# -----------------------------
-# Etherscan: timestamp → block number
-# -----------------------------
-def get_block_no_by_time(
-    unix_timestamp: int,
-    closest: str,
-    max_retries: int = 3,
-) -> int:
-    """
-    closest: 'before' | 'after'
-    """
-    assert closest in ("before", "after")
-
-    params = {
-        "module": "block",
-        "action": "getblocknobytime",
-        "timestamp": unix_timestamp,
-        "closest": closest,
-        "apikey": ETHERSCAN_API_KEY,
-    }
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            res = requests.get(BASE_URL, params=params, timeout=10)
-            res.raise_for_status()
-
-            data = res.json()
-            result = data.get("result")
-
-            if result is None:
-                raise RuntimeError(f"Empty result: {data}")
-
-            return int(result)
-
-        except Exception as e:
-            print(
-                f"❌ getblocknobytime failed "
-                f"(ts={unix_timestamp}, closest={closest}, attempt={attempt}): {e}",
-                flush=True,
-            )
-            time.sleep(2)
-
-    raise RuntimeError("Failed to resolve block number by time")
-
-# -----------------------------
-# utility func：date range → block range
-# -----------------------------
-def get_block_range_by_date(
-    start_date: str,
-    end_date: str,
-) -> Tuple[int, int]:
-    """
-    Input:
-      start_date: 'YYYY-MM-DD'
-      end_date:   'YYYY-MM-DD'
-
-    Apply:
-      [start_date 00:00:00,
-       end_date+1 00:00:00)
-    """
-
-    if start_date > end_date:
-        raise ValueError("start_date > end_date")
-
-    start_ts = date_to_timestamp(start_date, end=False)
-    end_ts = date_to_timestamp(end_date, end=True)
-
-    start_block = get_block_no_by_time(
-        unix_timestamp=start_ts,
-        closest="after",
-    )
-
-    end_block = get_block_no_by_time(
-        unix_timestamp=end_ts,
-        closest="before",
-    )
-
-    if start_block > end_block:
-        raise RuntimeError(
-            f"Invalid block range: {start_block} > {end_block}"
-        )
-
-    print(
-        f"Date range {start_date} ~ {end_date} "
-        f"→ blocks [{start_block}, {end_block}]",
-        flush=True,
-    )
-
-    return start_block, end_block
+o resolve block number by time")
 
 
 # -----------------------------
@@ -175,20 +67,6 @@ def resolve_block_range():
         "or (START_DATE & END_DATE)"
     )
 
-# -----------------------------
-# JSON safe serialization
-# -----------------------------
-def to_json_safe(obj):
-    if isinstance(obj, HexBytes):
-        return obj.hex()
-    elif isinstance(obj, AttributeDict):
-        return {k: to_json_safe(v) for k, v in obj.items()}
-    elif isinstance(obj, dict):
-        return {k: to_json_safe(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [to_json_safe(v) for v in obj]
-    else:
-        return obj
 
 
 # -----------------------------
@@ -220,32 +98,7 @@ w3 = Web3(Web3.HTTPProvider(ETH_RPC_URL))
 if not w3.is_connected():
     raise RuntimeError(f"Cannot connect to Ethereum RPC at {ETH_RPC_URL}")
 
-# -----------------------------
-# read last_block from Kafka compact topic
-# -----------------------------
-def load_last_block_from_kafka():
-    consumer = Consumer({
-        "bootstrap.servers": KAFKA_BROKER,
-        "group.id": f"state-reader-{STATE_KEY}",
-        "auto.offset.reset": "earliest",
-        "enable.auto.commit": False,
-    })
 
-    consumer.assign([TopicPartition(STATE_TOPIC, 0)])
-
-    last_block = None
-    while True:
-        msg = consumer.poll(1.0)
-        if msg is None:
-            break
-        if msg.error():
-            continue
-
-        if msg.key() and msg.key().decode() == STATE_KEY:
-            last_block = json.loads(msg.value())["last_block"]
-
-    consumer.close()
-    return last_block
 
 # -----------------------------
 # Fetch block

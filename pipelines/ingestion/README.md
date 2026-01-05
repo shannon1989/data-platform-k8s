@@ -100,3 +100,14 @@ spec:
 1. build image
 eval $(minikube docker-env)
 docker build -t eth-dagster-user-code:0.1.0 .
+
+只有当 同时满足以下 3 条，才值得高度抽象：
+ - 5+ 条链
+ - 10+ ingestion job
+ - 有 2–3 个开发者长期维护
+否则，高度抽象 一定是负资产。
+
+在数据工程里：
+  可读性 > 优雅性
+  局部重复 > 全局风险
+  清晰脚本 > 抽象体系
