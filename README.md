@@ -1,6 +1,6 @@
 # data-platform-k8s
 
-A data platform on Kubernetes integrating batch and streaming processing, object storage, and BI visualization.
+A modern data platform on Kubernetes integrating batch and streaming processing, object storage, and BI visualization.
 
 ---
 

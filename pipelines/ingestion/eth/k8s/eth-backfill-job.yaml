@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: eth-block-ingestion-backfill
+  name: eth-block-ingestion-backfill-2026-01-02-to-2026-01-03
   namespace: airflow
 spec:
   backoffLimit: 1
@@ -15,9 +15,9 @@ spec:
         command: ["python", "eth_backfill_job.py"]
         env:
           - name: START_DATE
-            value: "2026-01-01"
+            value: "2026-01-02"
           - name: END_DATE
-            value: "2026-01-01"
+            value: "2026-01-03"
           - name: ETHERSCAN_API_KEY
             valueFrom:
               secretKeyRef:

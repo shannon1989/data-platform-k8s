@@ -7,6 +7,11 @@
   - Streaming / Batch jobs
   - Airflow scheduler supported
 
+eth_backfill_job.py
+-> show progress of block data ingestion (eg. 6%)
+-> gost proxy for stablizied RPC
+-> Linux server date accuracy issue.
+
 # build docker image inside k8s docker
 
 ```bash
@@ -88,3 +93,26 @@ spec:
 ⚠️  retryable warning
 ❌  single operation failed
 🔥  transaction aborted / fatal
+
+
+## Dagster 
+
+1. build image
+eval $(minikube docker-env)
+docker build -t eth-dagster-user-code:0.1.0 .
+
+2. update dagster-workspace.yaml
+```YAML
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dagster-workspace-yaml
+  namespace: dagster
+data:
+  workspace.yaml: |
+    load_from:
+      - grpc_server:
+          host: eth-dagster-user-code
+          port: 3030
+          location_name: eth-backfill
+```

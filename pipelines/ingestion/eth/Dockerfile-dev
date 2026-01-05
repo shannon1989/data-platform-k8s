@@ -25,13 +25,6 @@ RUN uv pip install --system --no-cache .
 # code
 COPY eth_realtime_watcher.py .
 COPY eth_backfill_job.py .
-COPY assets_backfill.py .
-COPY definitions.py .
 
-# Expose the port that your Dagster instance will run on
-EXPOSE 3030
-
-CMD ["dagster", "api", "grpc", \
-     "-h", "0.0.0.0", \
-     "-p", "3030", \
-     "-f", "definitions.py"]
+# default: real-time watcher
+CMD ["python", "eth_realtime_watcher.py"]

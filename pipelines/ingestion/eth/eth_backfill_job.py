@@ -118,6 +118,19 @@ def get_block_range_by_date(
 
     return start_block, end_block
 
+
+# -----------------------------
+# Resolver for Dagster config, support passing parameters from Dagster
+# -----------------------------
+def resolve_block_range_by_date(
+    start_date: str,
+    end_date: str,
+):
+    return get_block_range_by_date(
+        start_date=start_date,
+        end_date=end_date,
+    )
+
 # -----------------------------
 # Environment Variables
 # -----------------------------
@@ -136,6 +149,8 @@ END_BLOCK = os.getenv("END_BLOCK")
 
 START_DATE = os.getenv("START_DATE")
 END_DATE = os.getenv("END_DATE")
+
+
 
 def resolve_block_range():
     """

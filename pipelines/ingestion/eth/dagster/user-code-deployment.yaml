@@ -1,0 +1,37 @@
+---
+global:
+  dagsterInstanceConfigMap: dagster-instance
+
+includeInstance: true
+
+deployments:
+  - name: "eth-dagster-backfill"
+    image:
+      # When a tag is not supplied, it will default as the Helm chart version.
+      repository: eth-dagster-user-code
+      tag: 0.1.0
+      pullPolicy: IfNotPresent
+
+    # The `dagsterApiGrpcArgs` key can also be replaced with `codeServerArgs` to use a new
+    # experimental `dagster code-server start` command instead of `dagster api grpc`, which
+    # can reload its definitions from within the Dagster UI without needing to restart the
+    # user code deployment pod.
+    codeServerArgs:
+      - "--python-file"
+      - "/app/definitions.py"
+
+    port: 3030
+
+    env:
+      - name: ETH_RPC_URL
+        valueFrom:
+          secretKeyRef:
+            name: eth-secrets
+            key: ETH_RPC_URL
+      - name: ETHERSCAN_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: eth-secrets
+            key: ETHERSCAN_API_KEY
+      - name: KAFKA_BROKER
+        value: kafka-kafka-brokers.kafka.svc.cluster.local:9092

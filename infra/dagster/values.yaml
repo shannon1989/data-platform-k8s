@@ -1,0 +1,51 @@
+runLauncher:
+  type: K8sRunLauncher
+
+telemetry:
+  enabled: false  # set to false for privacy concerns in production environments
+
+postgresql:
+  enabled: true
+  image:
+    registry: "docker.io"
+    repository: "library/postgres"
+    tag: "14.6"
+    pullPolicy: IfNotPresent
+  # persist as long as the PVCs do
+  postgresqlUsername: dagster
+  postgresqlPassword: dagster
+  postgresqlDatabase: dagster
+
+dagsterWebserver:
+  replicaCount: 1
+  image:
+    # When a tag is not supplied for a Dagster provided image,
+    # it will default as the Helm chart version.
+    repository: "docker.io/dagster/dagster-celery-k8s"
+    tag: ~
+    pullPolicy: IfNotPresent
+  # Support overriding the name prefix of the webserver pods
+  nameOverride: "webserver"
+
+  workspace:
+    enabled: true
+    #  the workspace for the webserver must be configured with the future hosts and ports 
+    # of the services exposing access to the User Code.
+    servers:
+      - host: "eth-dagster-backfill"  # The name of the user code deployment service
+        port: 3030
+
+dagsterDaemon:
+  enabled: true
+  image:
+    # When a tag is not supplied for a Dagster provided image,
+    # it will default as the Helm chart version.
+    repository: "docker.io/dagster/dagster-celery-k8s"
+    tag: ~
+    pullPolicy: IfNotPresent
+
+dagster-user-deployments:
+  enabled: true
+  deployments: [] # Remove default example deployments
+
+  enableSubchart: false # deploying user code in a separate Helm release
