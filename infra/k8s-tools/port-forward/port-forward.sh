@@ -27,15 +27,25 @@ port_forward() {
   echo $! > "$pid_file"
 }
 
-# ===== 在这里集中定义所有端口 =====
+# ===== define all ports =====
 
+# Monitoring
 port_forward kubernetes-dashboard kubernetes-dashboard svc/kubernetes-dashboard 9090:9090
 port_forward headlamp kube-system svc/kube-system 4466:4466
 port_forward prometheus prometheus svc/prometheus-kube-prometheus-prometheus 3000:9090
 port_forward grafana prometheus svc/prometheus-grafana 3001:80
+
+# Minio
+port_forward minio airflow svc/minio 9001:9001
+
+# Orchestration
 #port_forward airflow airflow svc/airflow 3002:80
 port_forward dagster dagster svc/dagster-webserver 3003:80
+
+# Kafka
 port_forward redpanda kafka svc/redpanda-console-console 3004:8080
+
+# Jupyter Pyspark
 port_forward jupyter jupyter-pyspark svc/jupyter-pyspark 8888:8888
 
 echo "✅ All port-forwards started"

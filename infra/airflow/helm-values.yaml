@@ -6,7 +6,7 @@ dags:
 
   gitSync:
     enabled: true
-    repo: ssh://git@ssh.github.com:443/shannon1989/data-analytics-platforms.git # (2)
+    repo: ssh://git@ssh.github.com:443/shannon1989/data-platform-k8s.git # (2)
     branch: "main"
     rev: HEAD
     depth: 1
@@ -57,7 +57,7 @@ config:
     remote_log_conn_id: "minio_conn"
     encrypt_s3_logs: "False"
 
-# 把 logging 配置通过 ENV 注入到所有组件
+# Passing logging config from ENV variables
 env:
   - name: AIRFLOW__LOGGING__REMOTE_LOGGING
     value: "True"

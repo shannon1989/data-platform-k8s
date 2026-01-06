@@ -1,8 +1,13 @@
 ## 3. MinIO Deployment:
+
 ```bash
-kubectl apply -f minio.yaml
+kubectl create ns airflow
 ```
-Port-forward and access MinIO Web Console: [http://localhost:9001](http://localhost:9001) (user: minioadmin pass: minioadmin)
+
+```bash
+kubectl apply -f .
+```
+Port-forward and access MinIO Web Console: (user: minioadmin pass: minioadmin)
 ```bash
 kubectl port-forward -n airflow svc/minio 9001:9001
 ```
@@ -21,7 +26,7 @@ mc mb local/airflow-logs
 mc policy set public local/airflow-logs
 ```
 
-Airflow configuration with MinIO Connection
+Airflow configuration with MinIO Connection (after airflow is deployed)
 ```bash
 kubectl exec -it -n airflow deploy/airflow-api-server -- \
 airflow connections add minio_conn \
