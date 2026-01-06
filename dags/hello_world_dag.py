@@ -1,50 +1,45 @@
-from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from __future__ import annotations
+
 from datetime import datetime
+
 from airflow.decorators import dag, task
-from kubernetes.client import models as k8s
 
-with DAG(dag_id="hello_world_dag",
-         start_date=datetime(2024,3,27),
-         schedule="@hourly",
-         catchup=False) as dag:
 
-    @task(
-        task_id="hello_world",
-        executor_config=default_executor_config
-    )
+@dag(
+    dag_id="hello_world_dag",
+    start_date=datetime(2024, 3, 27),
+    schedule="@hourly",
+    catchup=False,
+    tags=["example", "hello", "taskflow"],
+)
+def hello_world_dag():
+    """
+    A minimal, production-safe Hello World DAG for Airflow 3 on Kubernetes.
+
+    - TaskFlow API
+    - No executor-specific config
+    - Safe for LocalExecutor / KubernetesExecutor
+    """
+
+    @task
     def hello_world():
-        print('Hello World - From Github Repository')
+        print("Hello World - From Git-Synced Repository")
 
-
-
-    @task.bash(
-        task_id="sleep",
-    )
-    def sleep_task() -> str:
+    @task.bash
+    def sleep():
         return "sleep 10"
 
-
-    @task(
-        task_id="done",
-        #executor_config=default_executor_config
-    )
-    def done():
-        print('Done')
-
-
-    @task(
-        task_id="goodbye_world",
-    )
+    @task
     def goodbye_world():
-        print('Goodbye World - From Github Repository')
+        print("Goodbye World")
+
+    @task
+    def done():
+        print("Done 🎉")
+
+    # Task dependencies
+    hello_world() >> sleep() >> goodbye_world() >> done()
 
 
-    hello_world_task = hello_world()
-    sleep_task = sleep_task()
-    goodbye_world_task = goodbye_world()
-    done_task = done()
-
-
-    hello_world_task >> sleep_task >> goodbye_world_task >> done_task
+# DAG object
+hello_world_dag()
