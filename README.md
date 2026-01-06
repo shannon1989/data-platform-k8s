@@ -248,7 +248,7 @@ Constraints:
 
 ---
 
-## 8. One-Sentence Summary
+## 8. Summary
 
 > **A Kubernetes-based local Lakehouse platform equivalent to Azure Data Factory + Databricks + ADLS, designed with production-grade orchestration, compute, and storage separation.**
 
