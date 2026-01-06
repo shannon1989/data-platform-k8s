@@ -1,0 +1,9 @@
+services:
+  homer:
+    image: b4bz/homer
+    container_name: homer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/www/assets/config.yml
+    restart: unless-stopped

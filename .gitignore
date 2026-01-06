@@ -23,6 +23,6 @@ charts/
 
 secret/
 
-uv.lock
-
 .vscode
+
+.pids

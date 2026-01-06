@@ -1,0 +1,64 @@
+title: "K8s Data Platform"
+subtitle: "Local Dev Dashboard"
+logo: "./logo.png"
+
+theme: default
+color: slate
+
+services:
+  - name: "Observability"
+    icon: "fas fa-chart-line"
+    items:
+      - name: "Prometheus"
+        url: "http://localhost:3000"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
+      - name: "Grafana"
+        url: "http://localhost:3001"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
+      - name: "Kubernetes dashboard"
+        url: "http://localhost:9090"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
+      - name: "Headlamp"
+        url: "http://localhost:4466"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
+  - name: "Orchestration"
+    icon: "fas fa-project-diagram"
+    items:
+      - name: "Airflow"
+        url: "http://localhost:3002"
+        icon: "fas fa-network-wired"
+        target: "_blank"
+
+      - name: "Dagster"
+        url: "http://localhost:3003"
+        icon: "fas fa-wind"
+        target: "_blank"
+
+  - name: "Streaming"
+    icon: "fas fa-stream"
+    items:
+      - name: "Redpanda Console"
+        url: "http://localhost:3004"
+        icon: "fas fa-fish"
+        target: "_blank"
+
+      - name: "Kafka UI"
+        url: "http://localhost:3005"
+        icon: "fas fa-network-wired"
+        target: "_blank"
+
+  - name: "Compute"
+    icon: "fas fa-microchip"
+    items:
+      - name: "Jupyter Notebook"
+        url: "http://localhost:8888/lab?token=f1e557b5964d38d2a2a7ed4efc4f3177d97efdeac0e7ac54"
+        icon: "fas fa-book"
+        target: "_blank"
