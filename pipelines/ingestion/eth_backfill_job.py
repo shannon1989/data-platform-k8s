@@ -8,9 +8,6 @@ from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 from datetime import datetime, timedelta, timezone
 
-
-
-
 # -----------------------------
 # Resolver for Dagster config, support passing parameters from Dagster
 # -----------------------------
