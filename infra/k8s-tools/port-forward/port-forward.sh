@@ -39,7 +39,7 @@ port_forward grafana prometheus svc/prometheus-grafana 3001:80
 port_forward minio airflow svc/minio 9001:9001
 
 # Orchestration
-#port_forward airflow airflow svc/airflow 3002:80
+port_forward airflow airflow svc/airflow-api-server 8081:8080
 port_forward dagster dagster svc/dagster-webserver 3003:80
 
 # Kafka
