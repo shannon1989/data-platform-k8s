@@ -26,3 +26,5 @@ secret/
 .vscode
 
 .pids
+
+.ssh

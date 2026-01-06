@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from airflow.operators.python import PythonOperator
 from airflow import DAG
+from airflow.providers.cncf.kubernetes.operators.spark_kubernetes import SparkKubernetesOperator
 
 default_args = {
     'owner': 'airflow',

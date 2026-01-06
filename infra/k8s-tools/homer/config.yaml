@@ -19,10 +19,10 @@ services:
         icon: "fas fa-chart-area"
         target: "_blank"
 
-      # - name: "Kubernetes dashboard"
-      #   url: "http://localhost:9090"
-      #   icon: "fas fa-chart-area"
-      #   target: "_blank"
+      - name: "Kubernetes dashboard"
+        url: "http://localhost:9090"
+        icon: "fas fa-chart-area"
+        target: "_blank"
 
       - name: "Headlamp"
         url: "http://localhost:4466"
@@ -33,7 +33,7 @@ services:
     icon: "fas fa-project-diagram"
     items:
       - name: "Airflow"
-        url: "http://localhost:3002"
+        url: "http://localhost:8081"
         icon: "fas fa-network-wired"
         target: "_blank"
 

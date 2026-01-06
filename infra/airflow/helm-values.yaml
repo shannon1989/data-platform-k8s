@@ -2,21 +2,21 @@ executor: "KubernetesExecutor"
 
 dags:
   persistence:
-    enabled: false # (1)
+    enabled: false
 
   gitSync:
     enabled: true
-    repo: ssh://git@ssh.github.com:443/shannon1989/data-platform-k8s.git # (2)
-    branch: "main"
+    repo: ssh://git@ssh.github.com:443/shannon1989/data-platform-k8s.git
+    branch: "master" # Can be changed to any branch, tag, or commit SHA
     rev: HEAD
     depth: 1
     wait: 60  # Sync every 60 seconds
-    subPath: "dags" # (3)
-    containerName: "git-sync"
-    sshKeySecret: "airflow-git-ssh-key-secret" # (4)
-    #(5)
+    subPath: "dags" # Path within the repo to sync DAGs from
+    sshKeySecret: "airflow-git-ssh-key-secret"
+
     knownHosts: |
-      ssh.github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+      [ssh.github.com]:443 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+
 
 
 redis:
@@ -75,3 +75,39 @@ env:
     value: http://minio:9000
   - name: AWS_DEFAULT_REGION
     value: us-east-1
+
+# for minikube environment with limited resources
+api:
+  workers: 1
+  timeout: 120
+  host: 0.0.0.0
+  port: 8080
+  startupProbe:
+    enabled: false # disable startup probe to avoid timeout issues on low resource environments
+    httpGet:
+      path: /api/v2/version
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 30
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+
+scheduler:
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  startupProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    failureThreshold: 60
+    timeoutSeconds: 60
