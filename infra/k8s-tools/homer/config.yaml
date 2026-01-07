@@ -10,22 +10,22 @@ services:
     icon: "fas fa-chart-line"
     items:
       - name: "Prometheus"
-        url: "http://localhost:3000"
-        icon: "fas fa-chart-area"
-        target: "_blank"
-
-      - name: "Grafana"
-        url: "http://localhost:3001"
-        icon: "fas fa-chart-area"
-        target: "_blank"
-
-      - name: "Kubernetes dashboard"
         url: "http://localhost:9090"
         icon: "fas fa-chart-area"
         target: "_blank"
 
+      - name: "Grafana"
+        url: "http://localhost:9091"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
+      - name: "Kubernetes dashboard"
+        url: "http://localhost:9092"
+        icon: "fas fa-chart-area"
+        target: "_blank"
+
       - name: "Headlamp"
-        url: "http://localhost:4466"
+        url: "http://localhost:9093"
         icon: "fas fa-chart-area"
         target: "_blank"
 
@@ -33,12 +33,12 @@ services:
     icon: "fas fa-project-diagram"
     items:
       - name: "Airflow"
-        url: "http://localhost:3002"
+        url: "http://localhost:8081"
         icon: "fas fa-network-wired"
         target: "_blank"
 
       - name: "Dagster"
-        url: "http://localhost:3003"
+        url: "http://localhost:8082"
         icon: "fas fa-wind"
         target: "_blank"
 
@@ -46,13 +46,8 @@ services:
     icon: "fas fa-stream"
     items:
       - name: "Redpanda Console"
-        url: "http://localhost:3004"
+        url: "http://localhost:8086"
         icon: "fas fa-fish"
-        target: "_blank"
-
-      - name: "Kafka UI"
-        url: "http://localhost:3005"
-        icon: "fas fa-network-wired"
         target: "_blank"
 
   - name: "Object Storage "

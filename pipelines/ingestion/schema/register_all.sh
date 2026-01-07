@@ -16,7 +16,7 @@ register () {
   | jq
 }
 
-register blockchain.blocks-key blockchain.blocks.key.avsc
-register blockchain.blocks-value blockchain.blocks.value.avsc
-register blockchain.ingestion_state-key blockchain.ingestion_state.key.avsc
-register blockchain.ingestion_state-value blockchain.ingestion_state.value.avsc
+register blockchain.blocks.eth.mainnet-key blockchain.blocks.eth.mainnet-key.avsc
+register blockchain.blocks.eth.mainnet-value blockchain.blocks.eth.mainnet-value.avsc
+register blockchain.ingestion-state.eth.mainnet-key blockchain.ingestion-state.eth.mainnet-key.avsc
+register blockchain.ingestion-state.eth.mainnet-value blockchain.ingestion-state.eth.mainnet-value.avsc

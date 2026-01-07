@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "IngestionStateKey",
+  "namespace": "platform.ingestion.state",
+  "doc": "Ingestion progress and control state for blockchain pipelines",
+  "fields": [
+    {
+      "name": "job_name",
+      "type": "string",
+      "doc": "eth_block_realtime_job / eth_block_backfill_job"
+    }
+  ]
+}

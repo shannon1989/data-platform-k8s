@@ -1,0 +1,54 @@
+{
+  "type": "record",
+  "name": "IngestionState",
+  "namespace": "platform.ingestion.state",
+  "doc": "Ingestion progress and control state for blockchain pipelines",
+  "fields": [
+    {
+      "name": "job_name",
+      "type": "string",
+      "doc": "eth_block_realtime_job / eth_block_backfill_job"
+    },
+    {
+      "name": "mode",
+      "type": {
+        "type": "enum",
+        "name": "IngestionMode",
+        "symbols": ["realtime", "backfill"]
+      }
+    },
+    {
+      "name": "run_id",
+      "type": "string"
+    },
+    {
+      "name": "block_begin_height",
+      "type": "long",
+      "doc": "the first committed block when the job started"
+    },
+        {
+      "name": "block_current_height",
+      "type": "long",
+      "doc": "the current committed block when the job is running"
+    },
+
+    {
+      "name": "block_end_height",
+      "type": "long",
+      "doc": "the last committed block when the job finished"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "IngestionStatus",
+        "symbols": ["running", "stopped", "completed", "failed"]
+      }
+    },
+    {
+      "name": "updated_at",
+      "type": "string",
+      "doc": "ISO-8601 ingestion timestamp"
+    }
+  ]
+}

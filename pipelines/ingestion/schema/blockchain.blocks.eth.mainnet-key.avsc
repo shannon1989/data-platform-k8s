@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "BlockKey",
+  "namespace": "platform.ingestion.blocks",
+  "doc": "Generic blockchain block schema supporting multiple chains",
+  "fields": [
+    {
+      "name": "block_height",
+      "type": "long",
+      "doc": "Block number / slot / checkpoint"
+    }
+  ]
+}

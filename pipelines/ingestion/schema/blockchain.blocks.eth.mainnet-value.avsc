@@ -1,0 +1,43 @@
+{
+  "type": "record",
+  "name": "BlockEvent",
+  "namespace": "platform.ingestion.blocks",
+  "doc": "Generic blockchain block schema supporting multiple chains",
+  "fields": [
+    {
+      "name": "block_height",
+      "type": "long",
+      "doc": "Block number / slot / checkpoint"
+    },
+    {
+      "name": "job_name",
+      "type": "string",
+      "doc": "eth_block_realtime_job / eth_block_backfill_job"
+    },
+    {
+      "name": "run_id",
+      "type": "string"
+    },
+    {
+      "name": "mode",
+      "type": {
+        "type": "enum",
+        "name": "IngestionMode",
+        "symbols": ["realtime", "backfill"]
+      }
+    },
+    {
+      "name": "inserted_at",
+      "type": "string",
+      "doc": "ISO-8601 ingestion timestamp"
+    },
+    {
+      "name": "raw",
+      "type": {
+        "type": "map",
+        "values": "string"
+      },
+      "doc": "Chain-specific raw block payload (JSON stringified)"
+    }
+  ]
+}
