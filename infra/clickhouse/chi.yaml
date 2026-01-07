@@ -19,7 +19,7 @@ spec:
       - name: analytics
         layout:
           shardsCount: 2 # shards的作用是什么：数据分片，提高数据分布和查询性能
-          replicasCount: 2 # 每个shard内的副本数，提供高可用性和负载均衡, replicasCount > 1 时需要配置ZooKeeper
+          replicasCount: 1 # 每个shard内的副本数，提供高可用性和负载均衡, replicasCount > 1 时需要配置ZooKeeper
 
     users:
         metabase/password: metabase_password

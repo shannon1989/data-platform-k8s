@@ -6,7 +6,7 @@ metadata:
   labels:
     strimzi.io/cluster: kafka
 spec:
-  replicas: 1 # for production use at least 3 brokers
+  replicas: 1 # for production use at least 3 controllers
   roles:
     - controller
 
@@ -14,7 +14,7 @@ spec:
     type: persistent-claim
     size: 5Gi
     class: standard
-
+    
   resources:
     requests:
       cpu: "500m"

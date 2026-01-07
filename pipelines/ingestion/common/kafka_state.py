@@ -1,3 +1,15 @@
+import os
+import json
+from confluent_kafka import Producer, Consumer, TopicPartition
+
+# -----------------------------
+# Environment Variables
+# -----------------------------
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "kafka-kafka-brokers.kafka.svc.cluster.local:9092")
+STATE_TOPIC = os.getenv("STATE_TOPIC", "eth-ingestion-state")
+STATE_KEY = os.getenv("STATE_KEY", "eth-mainnet")
+
+
 # -----------------------------
 # read last_block from Kafka compact topic
 # -----------------------------

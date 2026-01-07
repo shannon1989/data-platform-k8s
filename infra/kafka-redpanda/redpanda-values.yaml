@@ -1,0 +1,87 @@
+# =========================================================
+# Cluster naming
+# =========================================================
+nameOverride: redpanda
+fullnameOverride: redpanda
+
+# =========================================================
+# Broker / StatefulSet
+# =========================================================
+statefulset:
+  replicas: 1 # for production use at least 3 brokers, 1 replica for single node.
+
+# =========================================================
+# Resource configuration (production baseline)
+# =========================================================
+resources:
+  cpu:
+    cores: 2
+  memory:
+    container:
+      max: 4Gi
+
+# =========================================================
+# Storage (StatefulSet PVC)
+# =========================================================
+storage:
+  persistentVolume:
+    enabled: true
+    size: 100Gi
+    storageClass: standard
+
+# =========================================================
+# Network listeners and Schema Registry
+# =========================================================
+listeners:
+  schemaRegistry:
+    enabled: true
+    port: 8081
+  kafka:
+    port: 9092
+  admin:
+    port: 9644
+  rpc:
+    port: 33145
+
+external:
+  enabled: false
+
+# =========================================================
+# Redpanda Console (Web UI)
+# =========================================================
+console:
+  enabled: true
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  config:
+    kafka:
+      brokers:
+        - redpanda:9092 # if single broker
+        # - redpanda-0.redpanda.kafka.svc.cluster.local:9092
+        # - redpanda-1.redpanda.kafka.svc.cluster.local:9092
+        # - redpanda-2.redpanda.kafka.svc.cluster.local:9092
+
+# =========================================================
+# Ingress configuration (Close TLS for internal use)
+# =========================================================
+
+tls:
+  enabled: false
+
+external:
+  enabled: false
+
+auth:
+  sasl:
+    enabled: false

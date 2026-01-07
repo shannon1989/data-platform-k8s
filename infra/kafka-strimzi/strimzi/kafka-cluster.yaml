@@ -3,6 +3,8 @@ kind: Kafka
 metadata:
   name: kafka
   namespace: kafka
+  annotations:
+    strimzi.io/cluster-id: zDoptgm6RsSqjOYI7tkJYQ # pre-set cluster ID for easier cluster replacement
 spec:
   kafka:
     version: 4.1.1

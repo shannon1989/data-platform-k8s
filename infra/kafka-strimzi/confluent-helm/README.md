@@ -1,0 +1,24 @@
+helm repo add confluentinc https://packages.confluent.io/helm
+helm repo update
+
+## install Confluent for Kubernetes（CFK）Operator
+helm install cfk confluentinc/confluent-for-kubernetes -n kafka
+
+## install schema registry
+```YAML
+apiVersion: platform.confluent.io/v1beta1
+kind: SchemaRegistry
+metadata:
+  name: schema-registry
+  namespace: kafka
+spec:
+  replicas: 1
+
+  image:
+    application: confluentinc/cp-schema-registry:7.6.1
+    init: confluentinc/confluent-init-container:2.8.0
+
+  dependencies:
+    kafka:
+      bootstrapEndpoint: kafka-kafka-bootstrap.kafka.svc:9092
+```

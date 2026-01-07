@@ -28,15 +28,14 @@ helm install strimzi-kafka-operator strimzi/strimzi-kafka-operator \
 kubectl apply -f .
 ```
 
-# redpand install
-add helm repo
-```bash
-helm repo add redpanda https://charts.redpanda.com
-helm repo update
-```
+How to fix "Exception in thread "main" java.lang.RuntimeException: Invalid cluster.id in: /var/lib/kafka/data/kafka-log0/meta.properties. Expected jtBtuYymS9WguHKEZrNywQ, but read zDoptgm6RsSqjOYI7tkJYQ"
 
-```bash
-helm install redpanda-console redpanda/console \
-  -n kafka \
-  -f values.yaml
+```YAML
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: kafka
+  namespace: kafka
+  annotations:
+    strimzi.io/cluster-id: zDoptgm6RsSqjOYI7tkJYQ 
 ```

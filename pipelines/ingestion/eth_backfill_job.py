@@ -39,7 +39,20 @@ END_BLOCK = os.getenv("END_BLOCK")
 START_DATE = os.getenv("START_DATE")
 END_DATE = os.getenv("END_DATE")
 
-
+# -----------------------------
+# JSON safe serialization
+# -----------------------------
+def to_json_safe(obj):
+    if isinstance(obj, HexBytes):
+        return obj.hex()
+    elif isinstance(obj, AttributeDict):
+        return {k: to_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, dict):
+        return {k: to_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_json_safe(v) for v in obj]
+    else:
+        return obj
 
 def resolve_block_range():
     """

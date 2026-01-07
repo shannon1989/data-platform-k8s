@@ -33,7 +33,7 @@ services:
     icon: "fas fa-project-diagram"
     items:
       - name: "Airflow"
-        url: "http://localhost:8081"
+        url: "http://localhost:3002"
         icon: "fas fa-network-wired"
         target: "_blank"
 
@@ -67,6 +67,6 @@ services:
     icon: "fas fa-microchip"
     items:
       - name: "Jupyter Notebook"
-        url: "http://localhost:8888/lab?token=f1e557b5964d38d2a2a7ed4efc4f3177d97efdeac0e7ac54"
+        url: "http://127.0.0.1:8888/lab?token=e95b1b008d4e5e18a4e4ae041abefb6cf4c9f7544cb8b047"
         icon: "fas fa-book"
         target: "_blank"
