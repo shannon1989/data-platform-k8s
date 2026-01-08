@@ -13,15 +13,14 @@ from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 from dataclasses import dataclass
 
-sys.path.append("/home/jovyan/work") 
-from src.etherscan_blocks import get_block_range_by_date
-from src.kafka_blocks_state import load_last_state
+from etherscan import get_block_range_by_date
+from pipelines.ingestion.common.kafka_state import load_last_state
 
 # -----------------------------
 # Environment Variables
 # -----------------------------
 
-JOB_DESC = os.getenv("JOB_NAME", "eth_backfill")
+
 # INSTANCE_ID = os.getenv("INSTANCE_ID", "0") # for parallel execution
 
 ETH_INFURA_RPC_URL = os.getenv("ETH_INFURA_RPC_URL", "https://mainnet.infura.io/v3/<YOUR_API_KEY>")
@@ -44,6 +43,17 @@ END_DATE = os.getenv("END_DATE")
 # START_DATE = os.getenv("START_DATE", "2026-01-01")
 # END_DATE = os.getenv("END_DATE", "2026-01-01")
 
+run_id = os.getenv("RUN_ID") or str(uuid.uuid4())
+
+JOB_NAME = os.getenv("JOB_NAME", "eth_backfill")
+if START_BLOCK and END_BLOCK:
+    job_name = f"{JOB_NAME}_block_{START_BLOCK}_{END_BLOCK}"
+elif START_DATE and END_DATE:
+    job_name = f"{JOB_NAME}_date_{START_DATE}_{END_DATE}"
+else:
+    job_name = JOB_NAME
+
+
 # =============================
 # Schema Registry
 # =============================
@@ -52,9 +62,6 @@ schema_registry = SchemaRegistryClient({
 })
 
 current_utctime = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-run_id = str(uuid.uuid4())
-
 
 # -----------------------------
 # JSON safe serialization

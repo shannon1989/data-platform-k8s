@@ -1,0 +1,54 @@
+from airflow.decorators import dag, task
+from airflow.utils.dates import days_ago
+from airflow.exceptions import AirflowFailException
+import subprocess
+import os
+
+@dag(
+    dag_id="eth_backfill_by_block",
+    start_date=days_ago(1),
+    schedule=None,           # 手动触发
+    catchup=False,
+    tags=["eth", "backfill", "block"],
+)
+def eth_backfill_by_block():
+
+    @task
+    def run_backfill(**context):
+        dag_run = context["dag_run"]
+
+        conf = dag_run.conf or {}
+        start_block = conf.get("start_block")
+        end_block = conf.get("end_block")
+
+        if not start_block or not end_block:
+            raise AirflowFailException("start_block and end_block are required")
+
+        env = os.environ.copy()
+        env.update({
+            "RUN_ID": dag_run.run_id,
+            "JOB_NAME": "eth_backfill",
+            "START_BLOCK": str(start_block),
+            "END_BLOCK": str(end_block),
+        })
+
+        cmd = [
+            "python",
+            "/home/jovyan/work/jobs/eth_backfill_job.py"
+        ]
+
+        result = subprocess.run(
+            cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+
+        print(result.stdout)
+        if result.returncode != 0:
+            print(result.stderr)
+            raise AirflowFailException("eth_backfill_job failed")
+
+    run_backfill()
+
+dag = eth_backfill_by_block()
