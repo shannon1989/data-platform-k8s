@@ -1,13 +1,14 @@
 from airflow.decorators import dag, task
-from airflow.utils.dates import days_ago
 from airflow.exceptions import AirflowFailException
 import subprocess
 import os
+import socket
+from datetime import datetime
 
 @dag(
     dag_id="eth_backfill_by_block",
-    start_date=days_ago(1),
-    schedule=None,           # 手动触发
+    start_date=datetime(2024, 3, 27),
+    schedule=None,           # triger manually
     catchup=False,
     tags=["eth", "backfill", "block"],
 )
@@ -34,7 +35,7 @@ def eth_backfill_by_block():
 
         cmd = [
             "python",
-            "/home/jovyan/work/jobs/eth_backfill_job.py"
+            "/opt/airflow/dags/repo/pipelines/ingestion/eth_backfill_job.py"
         ]
 
         result = subprocess.run(
