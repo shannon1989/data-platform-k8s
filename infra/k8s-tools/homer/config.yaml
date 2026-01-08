@@ -62,6 +62,6 @@ services:
     icon: "fas fa-microchip"
     items:
       - name: "Jupyter Notebook"
-        url: "http://127.0.0.1:8888/lab?token=e95b1b008d4e5e18a4e4ae041abefb6cf4c9f7544cb8b047"
+        url: "http://127.0.0.1:8888/lab?token=39361421ee9dedfaf4e49964b9406fb116bba0ba30740ffb"
         icon: "fas fa-book"
         target: "_blank"

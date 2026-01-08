@@ -7,7 +7,7 @@
     {
       "name": "job_name",
       "type": "string",
-      "doc": "eth_block_realtime_job / eth_block_backfill_job"
+      "doc": "eth_realtime_mainnet / eth_backfill_job"
     }
   ]
 }

@@ -54,6 +54,7 @@ def to_json_safe(obj):
     else:
         return obj
 
+
 def resolve_block_range():
     """
     Priority:
@@ -107,8 +108,6 @@ def run_eth_backfill(
 w3 = Web3(Web3.HTTPProvider(ETH_RPC_URL))
 if not w3.is_connected():
     raise RuntimeError(f"Cannot connect to Ethereum RPC at {ETH_RPC_URL}")
-
-
 
 # -----------------------------
 # Fetch block

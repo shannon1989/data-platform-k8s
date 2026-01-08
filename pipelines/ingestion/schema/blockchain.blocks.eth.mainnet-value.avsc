@@ -12,19 +12,11 @@
     {
       "name": "job_name",
       "type": "string",
-      "doc": "eth_block_realtime_job / eth_block_backfill_job"
+      "doc": "eth_realtime_mainnet / eth_backfill_job"
     },
     {
       "name": "run_id",
       "type": "string"
-    },
-    {
-      "name": "mode",
-      "type": {
-        "type": "enum",
-        "name": "IngestionMode",
-        "symbols": ["realtime", "backfill"]
-      }
     },
     {
       "name": "inserted_at",
@@ -33,11 +25,8 @@
     },
     {
       "name": "raw",
-      "type": {
-        "type": "map",
-        "values": "string"
-      },
-      "doc": "Chain-specific raw block payload (JSON stringified)"
+      "type": "string",
+      "doc": "Chain-specific raw block payload, JSON-stringified for schema stability"
     }
   ]
 }

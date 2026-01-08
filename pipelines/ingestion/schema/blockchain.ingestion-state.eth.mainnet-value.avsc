@@ -7,35 +7,26 @@
     {
       "name": "job_name",
       "type": "string",
-      "doc": "eth_block_realtime_job / eth_block_backfill_job"
-    },
-    {
-      "name": "mode",
-      "type": {
-        "type": "enum",
-        "name": "IngestionMode",
-        "symbols": ["realtime", "backfill"]
-      }
+      "doc": "eth_realtime_mainnet / eth_backfill_job"
     },
     {
       "name": "run_id",
       "type": "string"
     },
     {
-      "name": "block_begin_height",
-      "type": "long",
-      "doc": "the first committed block when the job started"
+      "name": "range",
+      "type": {
+        "type": "record",
+        "name": "BlockRange",
+        "fields": [
+          { "name": "start", "type": "long" },
+          { "name": "end", "type": "long" }
+        ]
+      }
     },
-        {
-      "name": "block_current_height",
-      "type": "long",
-      "doc": "the current committed block when the job is running"
-    },
-
     {
-      "name": "block_end_height",
-      "type": "long",
-      "doc": "the last committed block when the job finished"
+      "name": "checkpoint",
+      "type": "long"
     },
     {
       "name": "status",
@@ -46,7 +37,7 @@
       }
     },
     {
-      "name": "updated_at",
+      "name": "inserted_at",
       "type": "string",
       "doc": "ISO-8601 ingestion timestamp"
     }
