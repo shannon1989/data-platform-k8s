@@ -74,7 +74,7 @@ with DAG(
         task_id="run_eth_backfill_by_block",
         name="eth-backfill-block",
         namespace="airflow",
-        image="eth-backfill:0.1.2",
+        image="eth-backfill:0.1.3",
         cmds=["python", "eth_backfill_job.py"],
         get_logs=True,
         is_delete_operator_pod=True,

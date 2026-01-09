@@ -46,6 +46,39 @@ run_id = os.getenv("RUN_ID") or str(uuid.uuid4())
 
 JOB_NAME = os.getenv("JOB_NAME", "eth_backfill")
 
+# formating print
+def print_env_vars():
+    vars_to_print = {
+        "ETH_INFURA_RPC_URL": ETH_INFURA_RPC_URL,
+        "KAFKA_BROKER": KAFKA_BROKER,
+        "SCHEMA_REGISTRY_URL": SCHEMA_REGISTRY_URL,
+        "BLOCKS_TOPIC": BLOCKS_TOPIC,
+        "STATE_TOPIC": STATE_TOPIC,
+        "STATE_KEY": STATE_KEY,
+        "BATCH_SIZE": BATCH_SIZE,
+        "START_BLOCK": START_BLOCK,
+        "END_BLOCK": END_BLOCK,
+        "START_DATE": START_DATE,
+        "END_DATE": END_DATE,
+        "RUN_ID": run_id,
+        "JOB_NAME": JOB_NAME,
+    }
+
+    print("\n=== Environment Variables ===")
+    for key, value in vars_to_print.items():
+        # mask API Key 
+        if key == "ETH_INFURA_RPC_URL" and "<YOUR_API_KEY>" not in value:
+            # only show first 10 and last 5 characters
+            masked = f"{value[:10]}...{value[-5:]}"
+            print(f"{key}: {masked}")
+        else:
+            print(f"{key}: {value}")
+    print("=============================\n")
+
+
+print_env_vars()
+
+
 if START_BLOCK and END_BLOCK:
     job_name = f"{JOB_NAME}_block_{START_BLOCK}_{END_BLOCK}"
 elif START_DATE and END_DATE:
