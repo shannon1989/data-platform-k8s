@@ -33,12 +33,15 @@ with DAG(
             "dags/k8s/jobs/eth-backfill-job.yaml"
         ),
 
-        # Jinja Job YAML
         params={
             "START_DATE": "{{ params.start_date }}",
             "END_DATE": "{{ params.end_date }}",
             "RUN_ID": "{{ run_id }}",
-            "JOB_NAME": "{{ dag.dag_id }}_{{ params.start_date }}_{{ params.end_date }}",
+            "JOB_NAME": (
+                "eth_backfill_k8s_job_by_date"
+                "_{{ params.start_date }}"
+                "_{{ params.end_date }}"
+            ),
         },
         wait_until_job_complete=True,
     )

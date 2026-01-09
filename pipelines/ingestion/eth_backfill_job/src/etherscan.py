@@ -93,7 +93,7 @@ def get_block_range_by_date(
     """
 
     if start_date > end_date:
-        raise ValueError("start_date > end_date")
+        raise ValueError(f"start_date: {start_date} > end_date: {end_date}")
 
     start_ts = date_to_timestamp(start_date, end=False)
     end_ts = date_to_timestamp(end_date, end=True)

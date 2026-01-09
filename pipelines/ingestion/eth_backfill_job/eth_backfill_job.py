@@ -37,10 +37,8 @@ if not JOB_NAME:
 
 
 print('================ Environment Variables =================')
-print("JOB_NAME: ", JOB_NAME)
-print("START_DATE: ", START_DATE)
-print("END_DATE: ", END_DATE)
-print("run_id: ", run_id)
+for k in ["JOB_NAME", "START_DATE", "END_DATE", "RUN_ID"]:
+    print(f"{k}={os.getenv(k)}", flush=True)
 print('========================================================')
 
 # -----------------------------
