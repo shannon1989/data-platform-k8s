@@ -20,7 +20,7 @@ with DAG(
         "start_date": Param("2026-01-02", type="string"),
         "end_date": Param("2026-01-02", type="string"),
     },
-    tags=["eth", "backfill", "k8s"],
+    tags=["eth-mainnet", "KubernetesJobOperator"],
     doc_md = doc_md,
 ) as dag:
 

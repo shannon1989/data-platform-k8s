@@ -42,7 +42,7 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
-    tags=["eth-mainnet", "backfill", "ingestion"],
+    tags=["eth-mainnet", "KubernetesPodOperator"],
     doc_md = doc_md,
 ) as dag:
     
