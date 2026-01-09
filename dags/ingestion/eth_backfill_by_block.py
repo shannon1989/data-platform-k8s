@@ -23,10 +23,7 @@ def eth_backfill_by_block():
         end_block = conf.get("end_block")
 
         # Trigger from UI
-        # {
-        # "start_block": 24188501,
-        # "end_block": 24188600
-        # }
+        # {"start_block": 24188501,"end_block": 24188600}
         
         if not start_block or not end_block:
             raise AirflowFailException("start_block and end_block are required")
