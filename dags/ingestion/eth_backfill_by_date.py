@@ -96,7 +96,7 @@ with DAG(
         env_vars={
             # Airflow auto generated run_id
             "JOB_NAME": (
-                "{{ dag.dag_id }}"
+                "eth_backfill"
                 "_{{ dag_run.conf.get('start_date') }}"
                 "_{{ dag_run.conf.get('end_date') }}"
             ),
