@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: "{{ JOB_NAME }}-"
+  generateName: eth-backfill-job
   namespace: airflow
   labels:
     app: eth-backfill
@@ -27,8 +27,8 @@ spec:
               value: "{{ START_DATE }}"
             - name: END_DATE
               value: "{{ END_DATE }}"
-            # - name: RUN_ID
-            #   value: "{{ RUN_ID }}"
+            - name: RUN_ID
+              value: "{{ RUN_ID }}"
             - name: JOB_NAME
               value: "{{ JOB_NAME }}"
 
@@ -50,7 +50,3 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: RUN_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.ownerReferences[0].name

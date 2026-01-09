@@ -43,3 +43,8 @@ Allow Airflow pod operator to create pod on default namespace.
 ```bash
 kubectl apply -f airflow-pod-rbac.yaml
 ```
+
+Connection not found: conn_id="kubernetes_default"
+
+  - add connection from Airflow UI -> Admin -> Connections
+  - Extra Fields -> In cluster configuration (True)
