@@ -20,6 +20,7 @@ Changes:
     - Trigger example: {"start_block": 24188501,"end_block": 24188600}
 - 0.1.4:
     - add PythonOperator for input parameter validation
+    - input paramter: start_date and end_date (validate first)
 """
 
 eth_infura_secret = Secret(
@@ -37,7 +38,7 @@ etherscan_secret = Secret(
 )
 
 with DAG(
-    dag_id="eth_backfill_by_block",
+    dag_id="eth_backfill_by_date",
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
@@ -46,27 +47,40 @@ with DAG(
 ) as dag:
     
     # --------------------------
-    # Step1: validate start_block and end_block
+    # Step1: validate start_date and end_date
     # --------------------------
-    def validate_blocks(**context):
+    def validate_dates(**context):
         dag_run = context.get("dag_run")
         conf = dag_run.conf or {}
-        start_block = conf.get("start_block")
-        end_block = conf.get("end_block")
 
-        if not start_block or not end_block:
-            raise AirflowFailException("start_block and end_block are required")
-        if int(end_block) < int(start_block):
-            raise AirflowFailException("start_block must less or equal than end_block")
+        start_date_str = conf.get("start_date")
+        end_date_str = conf.get("end_date")
 
-        # return conf for downstream task
-        return {"start_block": start_block, "end_block": end_block}
+        if not start_date_str or not end_date_str:
+            raise AirflowFailException("start_date and end_date are required")
 
-    validate_blocks_task = PythonOperator(
-        task_id="validate_blocks",
-        python_callable=validate_blocks
+        # validate format YYYY-MM-DD
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise AirflowFailException(f"start_date '{start_date_str}' is not in YYYY-MM-DD format")
+
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise AirflowFailException(f"end_date '{end_date_str}' is not in YYYY-MM-DD format")
+
+        # validate start_date <= end_date
+        if start_date > end_date:
+            raise AirflowFailException("start_date must be less than or equal to end_date")
+
+        return {"start_date": str(start_date), "end_date": str(end_date)}
+
+    validate_date_task = PythonOperator(
+        task_id="validate_dates",
+        python_callable=validate_dates,
     )
-    
+
     # --------------------------
     # Step2: run backfill in KubernetesPodOperator
     # --------------------------
@@ -82,9 +96,9 @@ with DAG(
         env_vars={
             # Airflow auto generated run_id
             "RUN_ID": "{{ run_id }}",
-            "START_BLOCK": "{{ dag_run.conf.get('start_block') }}",
-            "END_BLOCK": "{{ dag_run.conf.get('end_block') }}",
+            "START_DATE": "{{ dag_run.conf.get('start_date') }}",
+            "END_DATE": "{{ dag_run.conf.get('end_date') }}",
         },
     )
     
-    validate_blocks_task >> run_backfill_task
+    validate_date_task >> run_backfill_task
