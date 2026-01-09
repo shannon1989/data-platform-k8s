@@ -11,10 +11,8 @@ with DAG(
 
     create_job = KubernetesJobOperator(
       task_id="create_eth_backfill_job",
-      job_name="eth-backfill-job",
       namespace="default",
-      image="eth-backfill:0.1.0",
-      cmds=["python", "eth_backfill_job.py"],
+      job_template_file="/opt/airflow/jobs/eth-backfill-job.yaml",
   )
 
     create_job

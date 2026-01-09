@@ -29,7 +29,11 @@ END_BLOCK = os.getenv("END_BLOCK")
 START_DATE = os.getenv("START_DATE")
 END_DATE = os.getenv("END_DATE")
 
-run_id = os.getenv("RUN_ID") or str(uuid.uuid4())
+run_id = os.getenv("RUN_ID", str(uuid.uuid4()))
+
+JOB_NAME = os.getenv("JOB_NAME")
+if not JOB_NAME:
+    raise RuntimeError("JOB_NAME is not configured")
 
 
 # -----------------------------
@@ -42,18 +46,6 @@ BLOCKS_TOPIC = "blockchain.blocks.eth.mainnet"
 STATE_TOPIC = "blockchain.ingestion-state.eth.mainnet"
 STATE_KEY = "blockchain.ingestion-state.eth.mainnet-key"
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))
-
-# -----------------------------
-# resolve job name for state topic
-# -----------------------------
-def resolve_job_name():
-    if START_BLOCK and END_BLOCK:
-        job_name = f"{JOB_DESC}_block_{START_BLOCK}_{END_BLOCK}"
-    if START_DATE and END_DATE:
-        job_name = f"{JOB_DESC}_date_{START_DATE}_{END_DATE}"
-    return job_name
-
-job_name = resolve_job_name()
 
 # -----------------------------
 # Schema Registry
@@ -123,17 +115,17 @@ def resolve_backfill_context() -> BackfillContext: # type hint
     )
     
 ctx = resolve_backfill_context()
-transactional_id = f"blockchain.ingestion.eth.mainnet.{job_name}"
+transactional_id = f"blockchain.ingestion.eth.mainnet.{JOB_NAME}"
 
 # -----------------------------
 # resolve start block height for in-job retry/failure
 # -----------------------------
 def resolve_start_block() -> Optional[int]:
-    state = load_last_state(job_name)
+    state = load_last_state(JOB_NAME)
 
     # 1️⃣ Completed: exit the job
     if state and state["status"] == "completed":
-        print(f"✅ Backfill {job_name} already completed")
+        print(f"✅ Backfill {JOB_NAME} already completed")
         sys.exit(0)   # 👈 terminalate Python program
 
     # 2️⃣ resume
@@ -146,11 +138,11 @@ def resolve_start_block() -> Optional[int]:
             sys.exit(0)
 
         start_block = last + 1
-        print(f"🔁 Resume {job_name} from block {start_block}")
+        print(f"🔁 Resume {JOB_NAME} from block {start_block}")
         return start_block
 
     # 3️⃣ new job
-    print(f"🚀 Start new job {job_name} from block {ctx.start_block}")
+    print(f"🚀 Start new job {JOB_NAME} from block {ctx.start_block}")
     return ctx.start_block
 
 
@@ -238,7 +230,7 @@ def backfill():
 
                 block_record = {
                     "block_height": bn,
-                    "job_name": job_name,
+                    "JOB_NAME": JOB_NAME,
                     "run_id": run_id,
                     "inserted_at": current_utctime,
                     "raw": json.dumps(block_dict),
@@ -261,7 +253,7 @@ def backfill():
             status = "completed" if is_last_batch else "running"
             
             state_record = {
-                "job_name": job_name,
+                "JOB_NAME": JOB_NAME,
                 "run_id": run_id,
                 "range": {
                     "start": start,
@@ -274,7 +266,7 @@ def backfill():
 
             producer.produce(
                 STATE_TOPIC,
-                key=job_name,
+                key=JOB_NAME,
                 value=state_value_serializer(
                     state_record,
                     SerializationContext(STATE_TOPIC, MessageField.VALUE)
@@ -299,7 +291,7 @@ def backfill():
 
             # normal write for failed status
             failed_state = {
-                "job_name": job_name,
+                "JOB_NAME": JOB_NAME,
                 "run_id": run_id,
                 "start_block": start,
                 "end_block": end,
@@ -310,7 +302,7 @@ def backfill():
 
             producer.produce(
                 STATE_TOPIC,
-                key=job_name,
+                key=JOB_NAME,
                 value=state_value_serializer(
                     failed_state,
                     SerializationContext(STATE_TOPIC, MessageField.VALUE)

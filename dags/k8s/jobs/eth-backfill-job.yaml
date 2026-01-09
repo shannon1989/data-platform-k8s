@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: "{{ JOB_NAME }}-"
+  namespace: airflow
+  labels:
+    app: eth-backfill
+    component: ingestion
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400   # purge logs after 1 day
+  template:
+    metadata:
+      labels:
+        app: eth-backfill
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: eth-backfill
+          image: eth-backfill:0.1.4
+          imagePullPolicy: IfNotPresent
+          command: ["python", "eth_backfill_job.py"]
+
+          env:
+            # Airflow business parameter ingestion
+            - name: START_DATE
+              value: "{{ START_DATE }}"
+            - name: END_DATE
+              value: "{{ END_DATE }}"
+            # - name: RUN_ID
+            #   value: "{{ RUN_ID }}"
+            - name: JOB_NAME
+              value: "{{ JOB_NAME }}"
+
+            # Secrets
+            - name: ETH_ETHERSCAN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: eth-secrets
+                  key: ETH_ETHERSCAN_API_KEY
+
+            - name: ETH_INFURA_RPC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: eth-secrets
+                  key: ETH_INFURA_RPC_URL
+
+            # Downward API → Pod/Job name
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RUN_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.ownerReferences[0].name
