@@ -12,29 +12,16 @@ from web3 import Web3
 from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 from dataclasses import dataclass
-
 from src.etherscan import get_block_range_by_date
 from src.kafka_state import load_last_state
+
 
 # -----------------------------
 # Environment Variables
 # -----------------------------
-# INSTANCE_ID = os.getenv("INSTANCE_ID", "0") # for parallel execution
-
 ETH_INFURA_RPC_URL = os.getenv("ETH_INFURA_RPC_URL", "https://mainnet.infura.io/v3/<YOUR_API_KEY>")
-
 if not ETH_INFURA_RPC_URL or "<YOUR_API_KEY>" in ETH_INFURA_RPC_URL:
     raise RuntimeError("ETH_INFURA_RPC_URL is not configured")
-
-
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "redpanda.kafka.svc:9092")
-SCHEMA_REGISTRY_URL = os.getenv("SCHEMA_REGISTRY_URL", "http://redpanda.kafka.svc:8081")
-
-BLOCKS_TOPIC = os.getenv("BLOCKS_TOPIC", "blockchain.blocks.eth.mainnet")
-STATE_TOPIC = os.getenv("STATE_TOPIC", "blockchain.ingestion-state.eth.mainnet")
-STATE_KEY = os.getenv("STATE_KEY", "blockchain.ingestion-state.eth.mainnet-key")
-
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))
 
 START_BLOCK = os.getenv("START_BLOCK")
 END_BLOCK = os.getenv("END_BLOCK")
@@ -44,52 +31,33 @@ END_DATE = os.getenv("END_DATE")
 
 run_id = os.getenv("RUN_ID") or str(uuid.uuid4())
 
-JOB_NAME = os.getenv("JOB_NAME", "eth_backfill")
 
-# formating print
-def print_env_vars():
-    vars_to_print = {
-        "ETH_INFURA_RPC_URL": ETH_INFURA_RPC_URL,
-        "KAFKA_BROKER": KAFKA_BROKER,
-        "SCHEMA_REGISTRY_URL": SCHEMA_REGISTRY_URL,
-        "BLOCKS_TOPIC": BLOCKS_TOPIC,
-        "STATE_TOPIC": STATE_TOPIC,
-        "STATE_KEY": STATE_KEY,
-        "BATCH_SIZE": BATCH_SIZE,
-        "START_BLOCK": START_BLOCK,
-        "END_BLOCK": END_BLOCK,
-        "START_DATE": START_DATE,
-        "END_DATE": END_DATE,
-        "RUN_ID": run_id,
-        "JOB_NAME": JOB_NAME,
-    }
+# -----------------------------
+# Config
+# -----------------------------
+JOB_DESC = "eth_backfill"
+KAFKA_BROKER = "redpanda.kafka.svc:9092"
+SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
+BLOCKS_TOPIC = "blockchain.blocks.eth.mainnet"
+STATE_TOPIC = "blockchain.ingestion-state.eth.mainnet"
+STATE_KEY = "blockchain.ingestion-state.eth.mainnet-key"
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))
 
-    print("\n=== Environment Variables ===")
-    for key, value in vars_to_print.items():
-        # mask API Key 
-        if key == "ETH_INFURA_RPC_URL" and "<YOUR_API_KEY>" not in value:
-            # only show first 10 and last 5 characters
-            masked = f"{value[:10]}...{value[-5:]}"
-            print(f"{key}: {masked}")
-        else:
-            print(f"{key}: {value}")
-    print("=======================================================================================\n")
+# -----------------------------
+# resolve job name for state topic
+# -----------------------------
+def resolve_job_name():
+    if START_BLOCK and END_BLOCK:
+        job_name = f"{JOB_DESC}_block_{START_BLOCK}_{END_BLOCK}"
+    if START_DATE and END_DATE:
+        job_name = f"{JOB_DESC}_date_{START_DATE}_{END_DATE}"
+    return job_name
 
+job_name = resolve_job_name()
 
-print_env_vars()
-
-
-if START_BLOCK and END_BLOCK:
-    job_name = f"{JOB_NAME}_block_{START_BLOCK}_{END_BLOCK}"
-elif START_DATE and END_DATE:
-    job_name = f"{JOB_NAME}_date_{START_DATE}_{END_DATE}"
-else:
-    job_name = JOB_NAME
-
-
-# =============================
+# -----------------------------
 # Schema Registry
-# =============================
+# -----------------------------
 schema_registry = SchemaRegistryClient({
     "url": SCHEMA_REGISTRY_URL
 })
@@ -112,7 +80,9 @@ def to_json_safe(obj):
         return obj
     
     
-
+# -----------------------------
+# resolve backfill context: date | block
+# -----------------------------
 @dataclass(frozen=True)
 class BackfillContext:
     start_block: int
@@ -153,32 +123,34 @@ def resolve_backfill_context() -> BackfillContext: # type hint
     )
     
 ctx = resolve_backfill_context()
-transactional_id = f"blockchain.ingestion.eth.mainnet.{JOB_NAME}"
+transactional_id = f"blockchain.ingestion.eth.mainnet.{job_name}"
 
-
+# -----------------------------
+# resolve start block height for in-job retry/failure
+# -----------------------------
 def resolve_start_block() -> Optional[int]:
-    state = load_last_state(JOB_NAME)
+    state = load_last_state(job_name)
 
     # 1️⃣ Completed: exit the job
     if state and state["status"] == "completed":
-        print(f"✅ Backfill {JOB_NAME} already completed")
+        print(f"✅ Backfill {job_name} already completed")
         sys.exit(0)   # 👈 terminalate Python program
 
     # 2️⃣ resume
     if state:
-        last = state["last_processed_block"]
-        end = state["end_block"]
+        last = state["checkpoint"]
+        end = state["range"]["end"]
 
         if last >= end:
             print(f"⚠️ State inconsistent: last >= end, treat as completed")
             sys.exit(0)
 
         start_block = last + 1
-        print(f"🔁 Resume {JOB_NAME} from block {start_block}")
+        print(f"🔁 Resume {job_name} from block {start_block}")
         return start_block
 
     # 3️⃣ new job
-    print(f"🚀 Start new job {JOB_NAME} from block {ctx.start_block}")
+    print(f"🚀 Start new job {job_name} from block {ctx.start_block}")
     return ctx.start_block
 
 
@@ -191,9 +163,9 @@ state_value_schema = schema_registry.get_latest_version(
     f"{STATE_TOPIC}-value"
 ).schema.schema_str
 
-# =============================
+# -----------------------------
 # Serializers
-# =============================
+# -----------------------------
 blocks_value_serializer = AvroSerializer(
     schema_registry,
     blocks_value_schema
@@ -203,7 +175,6 @@ state_value_serializer = AvroSerializer(
     schema_registry,
     state_value_schema
 )
-
 
 # -----------------------------
 # Web3
@@ -220,7 +191,7 @@ def get_block(bn):
 
 
 # -----------------------------
-# Resolver for Dagster config, support passing parameters from Dagster
+# delivery report for producer callback
 # -----------------------------
 def delivery_report(err, msg):
     if err is not None:
@@ -231,9 +202,9 @@ def delivery_report(err, msg):
             f"[{msg.partition()}] @ {msg.offset()}"
         )
 
-# =============================
-# Producer
-# =============================
+# -----------------------------
+# Producer initialization
+# -----------------------------
 producer = Producer({
     "bootstrap.servers": KAFKA_BROKER,
     "enable.idempotence": True,
@@ -267,7 +238,7 @@ def backfill():
 
                 block_record = {
                     "block_height": bn,
-                    "job_name": JOB_NAME,
+                    "job_name": job_name,
                     "run_id": run_id,
                     "inserted_at": current_utctime,
                     "raw": json.dumps(block_dict),
@@ -290,7 +261,7 @@ def backfill():
             status = "completed" if is_last_batch else "running"
             
             state_record = {
-                "job_name": JOB_NAME,
+                "job_name": job_name,
                 "run_id": run_id,
                 "range": {
                     "start": start,
@@ -303,7 +274,7 @@ def backfill():
 
             producer.produce(
                 STATE_TOPIC,
-                key=JOB_NAME,
+                key=job_name,
                 value=state_value_serializer(
                     state_record,
                     SerializationContext(STATE_TOPIC, MessageField.VALUE)
@@ -328,7 +299,7 @@ def backfill():
 
             # normal write for failed status
             failed_state = {
-                "job_name": JOB_NAME,
+                "job_name": job_name,
                 "run_id": run_id,
                 "start_block": start,
                 "end_block": end,
@@ -339,7 +310,7 @@ def backfill():
 
             producer.produce(
                 STATE_TOPIC,
-                key=JOB_NAME,
+                key=job_name,
                 value=state_value_serializer(
                     failed_state,
                     SerializationContext(STATE_TOPIC, MessageField.VALUE)
