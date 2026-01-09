@@ -64,8 +64,7 @@ with DAG(
 
     validate_blocks_task = PythonOperator(
         task_id="validate_blocks",
-        python_callable=validate_blocks,
-        provide_context=True,
+        python_callable=validate_blocks
     )
     
     # --------------------------
