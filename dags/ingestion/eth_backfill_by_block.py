@@ -1,4 +1,5 @@
 from airflow import DAG
+from airflow.models import Param
 from airflow.exceptions import AirflowFailException
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -20,6 +21,7 @@ Changes:
     - Trigger example: {"start_block": 24188501,"end_block": 24188600}
 - 0.1.4:
     - add PythonOperator for input parameter validation
+- 0.1.5: Use DAG parameters.
 """
 
 eth_infura_secret = Secret(
@@ -41,6 +43,10 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
+    params={
+        "start_block": Param("24000000", type="string"),
+        "end_block": Param("24000100", type="string"),
+    },
     tags=["eth-mainnet", "KubernetesPodOperator"],
     doc_md = doc_md,
 ) as dag:
@@ -49,10 +55,9 @@ with DAG(
     # Step1: validate start_block and end_block
     # --------------------------
     def validate_blocks(**context):
-        dag_run = context.get("dag_run")
-        conf = dag_run.conf or {}
-        start_block = conf.get("start_block")
-        end_block = conf.get("end_block")
+        params = context["params"]
+        start_block = params["start_block"]
+        end_block = params["end_block"]
 
         if not start_block or not end_block:
             raise AirflowFailException("start_block and end_block are required")
@@ -71,19 +76,24 @@ with DAG(
     # Step2: run backfill in KubernetesPodOperator
     # --------------------------
     run_backfill_task = KubernetesPodOperator(
-        task_id="run_eth_backfill_by_block",
+        task_id=f"run_{dag.dag_id}",
         name="eth-backfill-block",
         namespace="airflow",
-        image="eth-backfill:0.1.3",
+        image="eth-backfill:0.1.4",
         cmds=["python", "eth_backfill_job.py"],
         get_logs=True,
         is_delete_operator_pod=True,
         secrets=[eth_infura_secret, etherscan_secret],
         env_vars={
             # Airflow auto generated run_id
+            "JOB_NAME": (
+                "eth_backfill"
+                "_{{ params.start_block }}"
+                "_{{ params.end_block }}"
+            ),
             "RUN_ID": "{{ run_id }}",
-            "START_BLOCK": "{{ dag_run.conf.get('start_block') }}",
-            "END_BLOCK": "{{ dag_run.conf.get('end_block') }}",
+            "START_BLOCK": "{{ params.start_block }}",
+            "END_BLOCK": "{{ params.end_block }}",
         },
     )
     

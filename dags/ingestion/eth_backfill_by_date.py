@@ -1,4 +1,5 @@
 from airflow import DAG
+from airflow.models import Param
 from airflow.exceptions import AirflowFailException
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -21,6 +22,7 @@ Changes:
 - 0.1.4:
     - add PythonOperator for input parameter validation
     - input paramter: start_date and end_date (validate first)
+- 0.1.5: Use DAG parameters.
 """
 
 eth_infura_secret = Secret(
@@ -42,6 +44,10 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
+    params={
+        "start_date": Param("2026-01-04", type="string"),
+        "end_date": Param("2026-01-04", type="string"),
+    },
     tags=["eth-mainnet", "KubernetesPodOperator"],
     doc_md = doc_md,
 ) as dag:
@@ -50,11 +56,9 @@ with DAG(
     # Step1: validate start_date and end_date
     # --------------------------
     def validate_dates(**context):
-        dag_run = context.get("dag_run")
-        conf = dag_run.conf or {}
-
-        start_date_str = conf.get("start_date")
-        end_date_str = conf.get("end_date")
+        params = context["params"]
+        start_date_str = params["start_date"]
+        end_date_str = params["end_date"]
 
         if not start_date_str or not end_date_str:
             raise AirflowFailException("start_date and end_date are required")
@@ -97,12 +101,12 @@ with DAG(
             # Airflow auto generated run_id
             "JOB_NAME": (
                 "eth_backfill"
-                "_{{ dag_run.conf.get('start_date') }}"
-                "_{{ dag_run.conf.get('end_date') }}"
+                "_{{ params.start_date }}"
+                "_{{ params.end_date }}"
             ),
             "RUN_ID": "{{ run_id }}",
-            "START_DATE": "{{ dag_run.conf.get('start_date') }}",
-            "END_DATE": "{{ dag_run.conf.get('end_date') }}",
+            "START_DATE": "{{ params.start_date }}",
+            "END_DATE": "{{ params.end_date }}",
         },
     )
     
