@@ -22,6 +22,11 @@ from src.kafka_state import load_last_state
 # INSTANCE_ID = os.getenv("INSTANCE_ID", "0") # for parallel execution
 
 ETH_INFURA_RPC_URL = os.getenv("ETH_INFURA_RPC_URL", "https://mainnet.infura.io/v3/<YOUR_API_KEY>")
+
+if not ETH_INFURA_RPC_URL or "<YOUR_API_KEY>" in ETH_INFURA_RPC_URL:
+    raise RuntimeError("ETH_INFURA_RPC_URL is not configured")
+
+
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "redpanda.kafka.svc:9092")
 SCHEMA_REGISTRY_URL = os.getenv("SCHEMA_REGISTRY_URL", "http://redpanda.kafka.svc:8081")
 
