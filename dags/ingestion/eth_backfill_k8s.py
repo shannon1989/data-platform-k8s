@@ -3,7 +3,7 @@ from datetime import datetime
 from airflow.providers.cncf.kubernetes.operators.kubernetes_job import KubernetesJobOperator
 
 with DAG(
-    dag_id="eth_backfill_k8s_with_progress",
+    dag_id="eth_backfill_k8s",
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
@@ -17,11 +17,4 @@ with DAG(
       cmds=["python", "eth_backfill_job.py"],
   )
 
-    monitor = KafkaProgressSensor(
-        task_id="monitor_progress",
-        job_name="eth_backfill",
-        poke_interval=10,
-        timeout=60 * 60,
-    )
-
-    create_job >> monitor
+    create_job
