@@ -1,24 +1,30 @@
+# create role for KubernetesJobOperator
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: airflow-pod-operator
-  namespace: default
+  name: airflow-job-creator
+  namespace: airflow
 rules:
-- apiGroups: [""]
-  resources: ["pods", "pods/log"]
-  verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+    
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: airflow-pod-operator-binding
-  namespace: default
-subjects:
-- kind: ServiceAccount
-  name: airflow-worker
+  name: airflow-job-creator-binding
   namespace: airflow
+subjects:
+  - kind: ServiceAccount
+    name: airflow-worker
+    namespace: airflow
 roleRef:
   kind: Role
-  name: airflow-pod-operator
+  name: airflow-job-creator
   apiGroup: rbac.authorization.k8s.io

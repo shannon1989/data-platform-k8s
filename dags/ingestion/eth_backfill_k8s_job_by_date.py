@@ -40,6 +40,7 @@ with DAG(
             "RUN_ID": "{{ run_id }}",
             "JOB_NAME": "{{ dag.dag_id }}_{{ params.start_date }}_{{ params.end_date }}",
         },
+        wait_until_job_complete=True,
     )
 
     run_backfill
