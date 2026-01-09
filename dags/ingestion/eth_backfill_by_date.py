@@ -87,7 +87,7 @@ with DAG(
     run_backfill_task = KubernetesPodOperator(
         task_id="run_eth_backfill_by_date",
         name="eth-backfill-date",
-        namespace="default",
+        namespace="airflow",
         image="eth-backfill:0.1.3",
         cmds=["python", "eth_backfill_job.py"],
         get_logs=True,

@@ -25,20 +25,18 @@ with DAG(
 ) as dag:
 
     run_backfill = KubernetesJobOperator(
-        task_id="run_eth_backfill",
+        task_id=f"run_{dag.dag_id}",
         namespace="airflow",
 
-        job_template_file=(
-            "/opt/airflow/dags/repo/"
-            "dags/k8s/jobs/eth-backfill-job.yaml"
-        ),
-
-        params={
+        job_template_file=("/opt/airflow/dags/repo/dags/k8s/jobs/eth-backfill-job.yaml"),
+        
+        # Airflow business parameter ingestion (Jinja)
+        env_vars={
             "START_DATE": "{{ params.start_date }}",
             "END_DATE": "{{ params.end_date }}",
             "RUN_ID": "{{ run_id }}",
             "JOB_NAME": (
-                "eth_backfill_k8s_job_by_date"
+                "{{ dag.dag_id }}"
                 "_{{ params.start_date }}"
                 "_{{ params.end_date }}"
             ),

@@ -22,16 +22,6 @@ spec:
           command: ["python", "eth_backfill_job.py"]
 
           env:
-            # Airflow business parameter ingestion
-            - name: START_DATE
-              value: "{{ params.START_DATE }}"
-            - name: END_DATE
-              value: "{{ params.END_DATE }}"
-            - name: RUN_ID
-              value: "{{ params.RUN_ID }}"
-            - name: JOB_NAME
-              value: "{{ params.JOB_NAME }}"
-
             # Secrets
             - name: ETH_ETHERSCAN_API_KEY
               valueFrom:
