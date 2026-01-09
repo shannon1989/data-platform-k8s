@@ -85,7 +85,7 @@ with DAG(
     # Step2: run backfill in KubernetesPodOperator
     # --------------------------
     run_backfill_task = KubernetesPodOperator(
-        task_id="run_eth_backfill_by_date",
+        task_id=f"run_{dag.dag_id}",
         name="eth-backfill-date",
         namespace="airflow",
         image="eth-backfill:0.1.3",
@@ -95,6 +95,11 @@ with DAG(
         secrets=[eth_infura_secret, etherscan_secret],
         env_vars={
             # Airflow auto generated run_id
+            "JOB_NAME": (
+                "{{ dag.dag_id }}"
+                "_{{ dag_run.conf.get('start_date') }}"
+                "_{{ dag_run.conf.get('end_date') }}"
+            ),
             "RUN_ID": "{{ run_id }}",
             "START_DATE": "{{ dag_run.conf.get('start_date') }}",
             "END_DATE": "{{ dag_run.conf.get('end_date') }}",

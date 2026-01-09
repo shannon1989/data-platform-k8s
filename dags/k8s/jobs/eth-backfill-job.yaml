@@ -7,22 +7,65 @@ metadata:
     app: eth-backfill
     component: ingestion
 spec:
-  backoffLimit: 1
-  ttlSecondsAfterFinished: 86400   # purge logs after 1 day
+  # ---------------------------
+  # Retry strategy (K8s layer)
+  # ---------------------------
+  backoffLimit: 3 # Pod-level retry
+  completions: 1
+  parallelism: 1
+
+  # ---------------------------
+  # Garbage collection
+  # ---------------------------
+  ttlSecondsAfterFinished: 86400   # Auto-delete Job + Pod after 1 day
   template:
     metadata:
       labels:
         app: eth-backfill
     spec:
       restartPolicy: Never
+
+      # ---------------------------
+      # Scheduling (recommended)
+      # ---------------------------
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/worker
+                    operator: Exists
+
+      # ---------------------------
+      # Security (baseline)
+      # ---------------------------
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
       containers:
         - name: eth-backfill
           image: eth-backfill:0.1.4
           imagePullPolicy: IfNotPresent
           command: ["python", "eth_backfill_job.py"]
 
+          # ---------------------------
+          # Resource management
+          # ---------------------------
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+          # ---------------------------
+          # Environment variables
+          # ---------------------------
           env:
-            # Secrets
+            # ----- Secrets -----
             - name: ETH_ETHERSCAN_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -35,7 +78,7 @@ spec:
                   name: eth-secrets
                   key: ETH_INFURA_RPC_URL
 
-            # Downward API → Pod/Job name
+            # ----- Downward API -----
             - name: POD_NAME
               valueFrom:
                 fieldRef:

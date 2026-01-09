@@ -37,7 +37,7 @@ if not JOB_NAME:
 
 
 print('================ Environment Variables =================')
-for k in ["JOB_NAME", "START_DATE", "END_DATE", "RUN_ID"]:
+for k in ["JOB_NAME", "START_DATE", "END_DATE", "RUN_ID", "POD_NAME"]:
     print(f"{k}={os.getenv(k)}", flush=True)
 print('========================================================')
 
