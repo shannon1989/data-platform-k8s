@@ -17,7 +17,7 @@ Changes:
     - Insert ENV from k8s secrets
 - 0.1.3:
     - Insert static and dynamic variable
-    - Trigger example: {"start_block": 24188501,"end_block": 24188600}
+    - Trigger example: {"start_date": "2025-01-01","end_date": "2025-01-01"}
 - 0.1.4:
     - add PythonOperator for input parameter validation
     - input paramter: start_date and end_date (validate first)
@@ -85,8 +85,8 @@ with DAG(
     # Step2: run backfill in KubernetesPodOperator
     # --------------------------
     run_backfill_task = KubernetesPodOperator(
-        task_id="run_eth_backfill_by_block",
-        name="eth-backfill",
+        task_id="run_eth_backfill_by_date",
+        name="eth-backfill-date",
         namespace="airflow",
         image="eth-backfill:0.1.2",
         cmds=["python", "eth_backfill_job.py"],
