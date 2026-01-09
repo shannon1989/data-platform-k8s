@@ -24,13 +24,13 @@ spec:
           env:
             # Airflow business parameter ingestion
             - name: START_DATE
-              value: "{{ START_DATE }}"
+              value: "{{ params.START_DATE }}"
             - name: END_DATE
-              value: "{{ END_DATE }}"
+              value: "{{ params.END_DATE }}"
             - name: RUN_ID
-              value: "{{ RUN_ID }}"
+              value: "{{ params.RUN_ID }}"
             - name: JOB_NAME
-              value: "{{ JOB_NAME }}"
+              value: "{{ params.JOB_NAME }}"
 
             # Secrets
             - name: ETH_ETHERSCAN_API_KEY

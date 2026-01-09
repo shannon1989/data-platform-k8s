@@ -36,6 +36,13 @@ if not JOB_NAME:
     raise RuntimeError("JOB_NAME is not configured")
 
 
+print('================ Environment Variables =================')
+print("JOB_NAME: ", JOB_NAME)
+print("START_DATE: ", START_DATE)
+print("END_DATE: ", END_DATE)
+print("run_id: ", run_id)
+print('========================================================')
+
 # -----------------------------
 # Config
 # -----------------------------
