@@ -48,10 +48,6 @@ spec:
 
       containers:
         - name: eth-backfill
-          image: eth-backfill:0.1.4
-          imagePullPolicy: IfNotPresent
-          command: ["python", "eth_backfill_job.py"]
-
           # ---------------------------
           # Resource management
           # ---------------------------

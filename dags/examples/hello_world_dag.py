@@ -10,7 +10,7 @@ from airflow.decorators import dag, task
     start_date=datetime(2024, 3, 27),
     schedule="@hourly",
     catchup=False,
-    tags=["example", "hello", "taskflow"],
+    tags=["example"],
 )
 def hello_world_dag():
     """

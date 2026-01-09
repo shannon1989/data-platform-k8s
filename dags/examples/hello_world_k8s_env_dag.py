@@ -31,7 +31,7 @@ def print_runtime_env(task_name: str):
     start_date=datetime(2024, 3, 27),
     schedule="@hourly",
     catchup=False,
-    tags=["hello", "k8s", "observability"],
+    tags=["example"],
 )
 def hello_world_k8s_runtime_env():
     """

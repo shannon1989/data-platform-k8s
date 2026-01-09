@@ -63,6 +63,7 @@ with DAG(
         task_id=f"run_{dag.dag_id}",
         namespace="airflow",
         image="eth-backfill:0.1.4",
+        cmds=["python", "eth_backfill_job.py"],
         labels={
             "job": "eth-backfill",
             "chain": "eth-mainnet",
