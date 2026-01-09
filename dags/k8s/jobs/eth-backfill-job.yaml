@@ -27,16 +27,16 @@ spec:
       restartPolicy: Never
 
       # ---------------------------
-      # Scheduling (recommended)
+      # Scheduling (multi-node production recommended)
       # ---------------------------
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: workload
-                    operator: In
-                    values: ["batch"]
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: workload
+      #               operator: In
+      #               values: ["batch"]
 
       # ---------------------------
       # Security (baseline)
