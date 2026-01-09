@@ -36,15 +36,11 @@ STATE_KEY = os.getenv("STATE_KEY", "blockchain.ingestion-state.eth.mainnet-key")
 
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))
 
-START_BLOCK = os.getenv("START_BLOCK", "24188501")
-END_BLOCK = os.getenv("END_BLOCK", "24188600")
-# START_BLOCK = os.getenv("START_BLOCK")
-# END_BLOCK = os.getenv("END_BLOCK")
+START_BLOCK = os.getenv("START_BLOCK")
+END_BLOCK = os.getenv("END_BLOCK")
 
 START_DATE = os.getenv("START_DATE")
 END_DATE = os.getenv("END_DATE")
-# START_DATE = os.getenv("START_DATE", "2026-01-01")
-# END_DATE = os.getenv("END_DATE", "2026-01-01")
 
 run_id = os.getenv("RUN_ID") or str(uuid.uuid4())
 
