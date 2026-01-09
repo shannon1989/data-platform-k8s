@@ -19,8 +19,8 @@ with DAG(
     schedule=None,
     catchup=False,
     params={
-        "start_date": Param("2026-01-02", type="string"),
-        "end_date": Param("2026-01-02", type="string"),
+        "start_date": Param("2026-01-03", type="string"),
+        "end_date": Param("2026-01-03", type="string"),
     },
     tags=["eth-mainnet", "KubernetesJobOperator"],
     doc_md = doc_md,
