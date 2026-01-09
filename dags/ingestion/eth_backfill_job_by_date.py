@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.job import KubernetesJobOperator
 from airflow.models import Param
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow.exceptions import AirflowFailException
 from airflow.operators.python import PythonOperator
 
