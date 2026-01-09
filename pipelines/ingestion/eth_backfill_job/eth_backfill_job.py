@@ -13,8 +13,8 @@ from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 from dataclasses import dataclass
 
-from common.etherscan import get_block_range_by_date
-from common.kafka_state import load_last_state
+from src.etherscan import get_block_range_by_date
+from src.kafka_state import load_last_state
 
 # -----------------------------
 # Environment Variables

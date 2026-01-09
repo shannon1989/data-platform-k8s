@@ -39,3 +39,7 @@ Port-forward and access Airflow Web Console:
 kubectl -n airflow port-forward svc/airflow-api-server 8080:8080
 ```
 
+Allow Airflow pod operator to create pod on default namespace.
+```bash
+kubectl apply -f airflow-pod-rbac.yaml
+```
