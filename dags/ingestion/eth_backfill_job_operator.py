@@ -3,7 +3,7 @@ from datetime import datetime
 from airflow.providers.cncf.kubernetes.operators.job import KubernetesJobOperator
 
 with DAG(
-    dag_id="eth_backfill_k8s",
+    dag_id="eth_backfill_k8s_job_operator",
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
