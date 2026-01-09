@@ -54,7 +54,6 @@ with DAG(
             raise AirflowFailException("start_block and end_block are required")
 
         env = {
-            "RUN_ID": dag_run.run_id,
             "JOB_NAME": "eth_backfill",
             "START_BLOCK": str(start_block),
             "END_BLOCK": str(end_block),
