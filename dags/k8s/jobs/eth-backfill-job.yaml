@@ -10,7 +10,7 @@ spec:
   # ---------------------------
   # Retry strategy (K8s layer)
   # ---------------------------
-  backoffLimit: 3 # Pod-level retry
+  backoffLimit: 1 # Pod-level retry
   completions: 1
   parallelism: 1
 

@@ -235,7 +235,7 @@ def backfill():
 
                 block_record = {
                     "block_height": bn,
-                    "JOB_NAME": JOB_NAME,
+                    "job_name": JOB_NAME,
                     "run_id": run_id,
                     "inserted_at": current_utctime,
                     "raw": json.dumps(block_dict),
@@ -258,7 +258,7 @@ def backfill():
             status = "completed" if is_last_batch else "running"
             
             state_record = {
-                "JOB_NAME": JOB_NAME,
+                "job_name": JOB_NAME,
                 "run_id": run_id,
                 "range": {
                     "start": start,
@@ -296,7 +296,7 @@ def backfill():
 
             # normal write for failed status
             failed_state = {
-                "JOB_NAME": JOB_NAME,
+                "job_name": JOB_NAME,
                 "run_id": run_id,
                 "start_block": start,
                 "end_block": end,

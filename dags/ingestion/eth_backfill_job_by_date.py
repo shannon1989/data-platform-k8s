@@ -82,9 +82,9 @@ with DAG(
                 "_{{ params.end_date }}"
             ),
         },
-        retries=1,
+        retries=0,
         retry_delay=timedelta(minutes=5), # waiting for automatically retry
-        execution_timeout=timedelta(hours=6),
+        execution_timeout=timedelta(hours=24),
         wait_until_job_complete=True,
     )
 
