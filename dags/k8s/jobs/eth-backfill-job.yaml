@@ -22,6 +22,7 @@ spec:
     metadata:
       labels:
         app: eth-backfill
+        component: ingestion
     spec:
       restartPolicy: Never
 
@@ -33,8 +34,9 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: node-role.kubernetes.io/worker
-                    operator: Exists
+                  - key: workload
+                    operator: In
+                    values: ["batch"]
 
       # ---------------------------
       # Security (baseline)

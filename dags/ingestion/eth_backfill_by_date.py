@@ -88,7 +88,7 @@ with DAG(
         task_id=f"run_{dag.dag_id}",
         name="eth-backfill-date",
         namespace="airflow",
-        image="eth-backfill:0.1.3",
+        image="eth-backfill:0.1.4",
         cmds=["python", "eth_backfill_job.py"],
         get_logs=True,
         is_delete_operator_pod=True,

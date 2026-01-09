@@ -62,7 +62,7 @@ with DAG(
     run_backfill_task = KubernetesJobOperator(
         task_id=f"run_{dag.dag_id}",
         namespace="airflow",
-        
+        image="eth-backfill:0.1.4",
         labels={
             "job": "eth-backfill",
             "chain": "eth-mainnet",
@@ -82,7 +82,7 @@ with DAG(
             ),
         },
         retries=1,
-        retry_delay=timedelta(minutes=5),
+        retry_delay=timedelta(minutes=5), # waiting for automatically retry
         execution_timeout=timedelta(hours=6),
         wait_until_job_complete=True,
     )
