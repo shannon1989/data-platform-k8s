@@ -1,6 +1,6 @@
 from airflow import DAG
 from datetime import datetime
-from airflow.providers.cncf.kubernetes.operators.kubernetes_job import KubernetesJobOperator
+from airflow.providers.cncf.kubernetes.operators.job import KubernetesJobOperator
 
 with DAG(
     dag_id="eth_backfill_k8s",
