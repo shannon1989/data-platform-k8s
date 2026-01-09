@@ -6,8 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 ETHERSCAN_CHAIN_ID = 1
 ETHERSCAN_API_URL = os.getenv("ETH_ETHERSCAN_API_URL", f"https://api.etherscan.io/v2/api?chainid={ETHERSCAN_CHAIN_ID}")
-ETHERSCAN_API_KEY = os.getenv("ETH_ETHERSCAN_API_KEY", "Your Etherscan API KEY")
 
+ETHERSCAN_API_KEY = os.getenv("ETH_ETHERSCAN_API_KEY", "<YOUR_API_KEY>")
+
+if not ETHERSCAN_API_KEY or "<YOUR_API_KEY>" in ETHERSCAN_API_KEY:
+    raise RuntimeError("ETH_ETHERSCAN_API_KEY is not configured")
 
 # ----------------------------------------
 # Date → unix timestamp (UTC) [start, end)
