@@ -22,7 +22,7 @@ Changes:
 - 0.1.4:
     - add PythonOperator for input parameter validation
     - input paramter: start_date and end_date (validate first)
-- 0.1.5: Use DAG parameters.
+    - Use DAG parameters, fix bug inside eth_backfill_job.py
 """
 
 eth_infura_secret = Secret(

@@ -99,7 +99,7 @@ spec:
 
 1. build image
 eval $(minikube docker-env)
-docker build -t eth-dagster-user-code:0.1.0 .
+docker build -t eth-backfill:0.1.4 .
 
 只有当 同时满足以下 3 条，才值得高度抽象：
  - 5+ 条链

@@ -298,9 +298,11 @@ def backfill():
             failed_state = {
                 "job_name": JOB_NAME,
                 "run_id": run_id,
-                "start_block": start,
-                "end_block": end,
-                "last_processed_block": current - 1,  # the last success block
+                "range": {
+                    "start": start,
+                    "end": end
+                },
+                "checkpoint": current - 1,
                 "status": "failed",
                 "inserted_at": current_utctime
             }

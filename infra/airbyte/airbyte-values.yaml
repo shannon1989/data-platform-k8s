@@ -1,0 +1,44 @@
+global:
+  airbyte:
+    database:
+      type: postgresql
+
+postgresql:
+  enabled: true
+  auth:
+    username: airbyte
+    password: airbyte
+    database: airbyte
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+
+webapp:
+  service:
+    type: NodePort
+    nodePort: 30080
+
+server:
+  extraEnv:
+    - name: AIRBYTE_ROLE
+      value: "server"
+
+worker:
+  extraEnv:
+    - name: AIRBYTE_ROLE
+      value: "worker"
+
+scheduler:
+  extraEnv:
+    - name: AIRBYTE_ROLE
+      value: "scheduler"
+
+temporal:
+  enabled: true
+
+logs:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
