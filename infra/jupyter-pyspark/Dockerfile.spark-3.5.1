@@ -1,0 +1,64 @@
+# ===============================
+# Base: Jupyter PySpark 3.5.1
+# ===============================
+FROM quay.io/jupyter/pyspark-notebook:spark-3.5.1
+
+USER root
+
+# ===============================
+# Hadoop AWS + AWS SDK (for MinIO / S3A)
+# ===============================
+RUN wget -P /usr/local/spark/jars \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
+    wget -P /usr/local/spark/jars \
+    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar
+
+# ===============================
+# Iceberg Spark Runtime (Spark 3.5)
+# ===============================
+RUN wget -P /usr/local/spark/jars \
+    https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.2/iceberg-spark-runtime-3.5_2.12-1.5.2.jar
+
+
+# Iceberg
+RUN echo "\
+spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions\n\
+spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog\n\
+spark.sql.catalog.iceberg.type=hadoop\n\
+spark.sql.catalog.iceberg.warehouse=s3a://datalake/iceberg\n\
+\n\
+# S3A / MinIO\n\
+spark.hadoop.fs.s3a.endpoint=http://minio.airflow.svc.cluster.local:9000\n\
+spark.hadoop.fs.s3a.access.key=minioadmin\n\
+spark.hadoop.fs.s3a.secret.key=minioadmin\n\
+spark.hadoop.fs.s3a.path.style.access=true\n\
+spark.hadoop.fs.s3a.connection.ssl.enabled=false\n\
+spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem\n\
+" > /usr/local/spark/conf/spark-defaults.conf
+
+
+# ===============================
+# Python tooling
+# ===============================
+RUN pip install --no-cache-dir uv
+
+# ===============================
+# Project Python dependencies
+# ===============================
+COPY pyproject.toml .
+RUN uv pip install --system --no-cache .
+
+# ===============================
+# Clean workspace (Jupyter recreates it)
+# ===============================
+RUN rm -rf /home/jovyan/*
+
+USER jovyan
+
+
+# This image can be used as below:
+# Jupyter Notebook
+# Airflow KubernetesPodOperator
+# Spark Operator（driver/executor）
+
+# kubectl rollout restart deployment jupyter-pyspark -n airflow

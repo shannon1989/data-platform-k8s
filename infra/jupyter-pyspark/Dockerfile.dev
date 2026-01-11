@@ -1,0 +1,22 @@
+# Use a stable image for spark, minio
+FROM quay.io/jupyter/pyspark-notebook:spark-3.5.1
+
+USER root
+
+# Hadoop AWS + AWS SDK, jupyter/pyspark-notebook without cloud storage support by default 
+RUN wget -P /usr/local/spark/jars \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
+    wget -P /usr/local/spark/jars \
+    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar
+
+# install uv
+RUN pip install --no-cache-dir uv
+
+# deps
+COPY pyproject.toml .
+RUN uv pip install --system --no-cache .
+
+# clean up all except for work directory (will be recreated on container start)
+RUN rm -rf /home/jovyan/*
+
+USER jovyan

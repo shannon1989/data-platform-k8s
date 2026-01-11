@@ -50,7 +50,7 @@ port_forward redpanda-console kafka svc/redpanda-console 8086:8080
 port_forward redpanda-schema-registry kafka svc/redpanda 18081:8081
 
 # Jupyter Pyspark (8888)
-port_forward jupyter jupyter-pyspark svc/jupyter-pyspark 8888:8888
+port_forward jupyter airflow svc/jupyter-pyspark 8888:8888
 
 echo "✅ All port-forwards started"
 echo "📂 Logs & PIDs in ./pids/"
