@@ -1,7 +1,7 @@
 [project]
-name = "juptyer-pyspark"
+name = "juptyer-pyspark-minio-iceberg"
 version = "0.1.0"
-description = "A Jupyter notebook with PySpark support for data and development and testing"
+description = "A Jupyter notebook with PySpark / minio / iceberg support"
 requires-python = ">=3.11"
 dependencies = [
     "confluent-kafka>=2.12.2",
@@ -9,4 +9,5 @@ dependencies = [
     "Authlib>=1.6.6",
     "fastavro>=1.12.1",
     "cachetools>=6.2.4",
+    "pyspark>=3.5.1",
 ]

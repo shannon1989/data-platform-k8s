@@ -1,0 +1,7 @@
+pyspark==3.5.1
+jupyterlab
+confluent-kafka>=2.12.2
+web3>=7.14.0
+authlib>=1.6.6
+fastavro>=1.12.1
+cachetools>=6.2.4
