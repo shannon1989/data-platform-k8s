@@ -15,3 +15,9 @@ client = SchemaRegistryClient({'url': 'http://schema-registry.kafka.svc:8081'})
 schema = client.get_latest_version("my-subject")
 print(schema.schema.schema_str)
 ```
+
+Schema Registry Evolution rules:
+> Compatibility: BACKWARD or FULL
+1. Only add fields; do not remove fields.
+2. New fields must have a default value.
+3. Never change the semantics (meaning) of existing fields.

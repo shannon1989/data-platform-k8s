@@ -24,17 +24,29 @@ spec:
               mountPath: /home/jovyan/work
 
           env:
-            - name: ETH_INFURA_RPC_URL
+            - name: INFURA_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: eth-secrets
-                  key: ETH_INFURA_RPC_URL
+                  name: api-secrets
+                  key: INFURA_API_KEY
 
-            - name: ETH_ETHERSCAN_API_KEY
+            - name: ETHERSCAN_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: eth-secrets
-                  key: ETH_ETHERSCAN_API_KEY
+                  name: api-secrets
+                  key: ETHERSCAN_API_KEY
+
+            - name: ALCHEMY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: ALCHEMY_API_KEY
+
+            - name: BLOCKPI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: BLOCKPI_API_KEY
 
       volumes:
         - name: pyspark-notebook-data

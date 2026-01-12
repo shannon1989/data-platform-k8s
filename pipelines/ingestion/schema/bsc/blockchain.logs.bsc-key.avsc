@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "BlockKey",
+  "namespace": "blockchain.logs",
+  "doc": "Raw blockchain log from eth_getLogs",
+  "fields": [
+    {
+      "name": "block_height",
+      "type": "long",
+      "doc": "Block number / slot / checkpoint"
+    }
+  ]
+}
