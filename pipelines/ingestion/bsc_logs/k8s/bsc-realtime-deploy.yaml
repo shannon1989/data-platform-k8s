@@ -19,7 +19,7 @@ spec:
 
       containers:
         - name: bsc-logs-ingestion
-          image: bsc-realtime-logs:0.1.4
+          image: bsc-realtime-logs:0.1.9
           imagePullPolicy: IfNotPresent
           command: ["python", "bsc_realtime_logs.py"]
 

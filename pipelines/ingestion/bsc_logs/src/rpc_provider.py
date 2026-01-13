@@ -5,6 +5,9 @@ from web3.middleware import ExtraDataToPOAMiddleware
 from src.rpc_context import set_current_rpc
 from src.metrics import RPC_REQUESTS, RPC_ERRORS
 
+# -----------------------------
+# RPC Provider config
+# -----------------------------
 class RpcProvider:
     def __init__(self, name, url, weight):
         self.name = name
