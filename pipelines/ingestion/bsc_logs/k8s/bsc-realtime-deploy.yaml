@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bsc-logs-ingestion
+  namespace: airflow
+  labels:
+    app: bsc-logs-ingestion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bsc-logs-ingestion
+  template:
+    metadata:
+      labels:
+        app: bsc-logs-ingestion
+    spec:
+      restartPolicy: Always
+
+      containers:
+        - name: bsc-logs-ingestion
+          image: bsc-realtime-logs:0.1.4
+          imagePullPolicy: IfNotPresent
+          command: ["python", "bsc_realtime_logs.py"]
+
+          # -----------------------------
+          # Metrics endpoint
+          # -----------------------------
+          ports:
+            - name: metrics
+              containerPort: 8000
+
+          # -----------------------------
+          # Environment variables
+          # - Secrets only (API keys)
+          # -----------------------------
+          envFrom:
+            - secretRef:
+                name: bsc-rpc-secrets
+
+          # -----------------------------
+          # Volume mount (RPC config)
+          # -----------------------------
+          volumeMounts:
+            - name: rpc-config
+              mountPath: /etc/ingestion
+              readOnly: true
+
+          # -----------------------------
+          # (Optional but recommended)
+          # Resource limits
+          # -----------------------------
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+      # -----------------------------
+      # Volumes
+      # -----------------------------
+      volumes:
+        - name: rpc-config
+          configMap:
+            name: bsc-rpc-config

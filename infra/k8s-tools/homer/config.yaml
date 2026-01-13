@@ -62,6 +62,6 @@ services:
     icon: "fas fa-microchip"
     items:
       - name: "Jupyter Notebook"
-        url: "http://127.0.0.1:8888/lab?token=f10b284e45d0f8da4e63e373b1c72ce73c5cdf71be265145" # login pod with command "jupyter server list"
+        url: "http://127.0.0.1:8888/lab?token=b14d56ea5017bd94170edef28b2b3759890f8f0e6747c60d" # login pod with command "jupyter server list"
         icon: "fas fa-book"
         target: "_blank"
