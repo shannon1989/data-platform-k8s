@@ -23,30 +23,13 @@ spec:
             - name: pyspark-notebook-data
               mountPath: /home/jovyan/work
 
-          env:
-            - name: INFURA_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: INFURA_API_KEY
-
-            - name: ETHERSCAN_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: ETHERSCAN_API_KEY
-
-            - name: ALCHEMY_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: ALCHEMY_API_KEY
-
-            - name: BLOCKPI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: api-secrets
-                  key: BLOCKPI_API_KEY
+          # -----------------------------
+          # Environment variables
+          # - Secrets only (API keys)
+          # -----------------------------
+          envFrom:
+            - secretRef:
+                name: bsc-rpc-secrets
 
       volumes:
         - name: pyspark-notebook-data

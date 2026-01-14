@@ -111,3 +111,12 @@ docker build -t eth-backfill:0.1.4 .
   可读性 > 优雅性
   局部重复 > 全局风险
   清晰脚本 > 抽象体系
+
+
+Check previous log:
+kubectl logs -n airflow bsc-logs-ingestion-b548dcf69-ftxzh --previous
+
+Search logs inside the POD:
+kubectl logs -n airflow deploy/bsc-logs-ingestion \
+  | jq 'select(.level=="ERROR")'
+

@@ -21,11 +21,32 @@ def delivery_report(err, msg):
 def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
     producer = Producer({
         "bootstrap.servers": KAFKA_BROKER,
+        
+        # Exactly-once / Transactions
         "enable.idempotence": True,
         "acks": "all",
-        "retries": 3,
-        "linger.ms": 5,
-        "transactional.id": TRANSACTIONAL_ID
+        "transactional.id": TRANSACTIONAL_ID,
+        
+        # retry
+        "retries": 1000000,
+        "max.in.flight.requests.per.connection": 5,
+        
+        # Throughput tuning
+        "linger.ms": 20,
+        "batch.size": 262144,          # 256KB
+        "compression.type": "lz4",
+        
+        # Timeouts（avoid Erroneous state）
+        "request.timeout.ms": 60000,
+        "delivery.timeout.ms": 120000,
+        "transaction.timeout.ms": 600000,  # 10 min
+        
+        # Backpressure protection
+        "queue.buffering.max.kbytes": 1048576,  # 1GB
+        "queue.buffering.max.messages": 1000000,
+        
+        # Socket stability
+        "socket.keepalive.enable": True,
     })
     log.info("🔧 Initializing Kafka transactions...")
     producer.init_transactions()

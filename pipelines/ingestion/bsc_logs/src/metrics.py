@@ -47,3 +47,10 @@ RPC_ERRORS = Counter(
     "RPC errors by provider",
     ["rpc"]
 )
+
+
+KAFKA_TX_FAILURE = Counter(
+                "bsc_kafka_transaction_failed_total",
+                "Kafka transaction failures",
+                ["job"],
+            )
