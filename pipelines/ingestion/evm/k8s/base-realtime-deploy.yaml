@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: base-logs-ingestion
+  namespace: airflow
+  labels:
+    app: base-logs-ingestion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: base-logs-ingestion
+  template:
+    metadata:
+      labels:
+        app: base-logs-ingestion
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: base-logs-ingestion
+          image: blockchain-realtime-logs:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "blockchain_realtime_logs.py"]
+
+          # -----------------------------
+          # Ingest runtime variables
+          # -----------------------------
+          env:
+            - name: BATCH_SIZE
+              value: "5"
+            - name: BATCH_TX_SIZE
+              value: "10"
+            - name: POLL_INTERVAL
+              value: "0.1" # Avoid RPC error "Max retries exceeded"
+            - name: CHAIN
+              value: "base"
+              
+          # -----------------------------
+          # Metrics endpoint
+          # -----------------------------
+          ports:
+            - name: metrics
+              containerPort: 8000
+
+          # -----------------------------
+          # Environment variables
+          # - Secrets only (API keys)
+          # -----------------------------
+          envFrom:
+            - secretRef:
+                name: rpc-api-keys
+
+          # -----------------------------
+          # Volume mount (RPC config)
+          # -----------------------------
+          volumeMounts:
+            - name: rpc-config
+              mountPath: /etc/ingestion
+              readOnly: true
+
+          # -----------------------------
+          # (Optional but recommended)
+          # Resource limits
+          # -----------------------------
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /metrics
+          #     port: metrics
+          #   initialDelaySeconds: 30
+          #   periodSeconds: 10
+          #   failureThreshold: 3
+
+          # readinessProbe:
+          #   httpGet:
+          #     path: /metrics
+          #     port: metrics
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          
+          # startupProbe:
+          #   httpGet:
+          #     path: /metrics
+          #     port: metrics
+          #   failureThreshold: 30
+          #   periodSeconds: 5
+
+      # -----------------------------
+      # Volumes
+      # -----------------------------
+      volumes:
+        - name: rpc-config
+          configMap:
+            name: blockchain-rpc-config

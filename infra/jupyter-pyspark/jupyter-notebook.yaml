@@ -24,17 +24,34 @@ spec:
               mountPath: /home/jovyan/work
 
           # -----------------------------
+          # Volume mount (RPC config)
+          # -----------------------------
+            - name: rpc-config
+              mountPath: /etc/ingestion/rpc_providers.json
+              subPath: rpc_providers.json
+              readOnly: true
+
+          # -----------------------------
           # Environment variables
           # - Secrets only (API keys)
           # -----------------------------
           envFrom:
             - secretRef:
-                name: bsc-rpc-secrets
+                name: rpc-api-keys
+
 
       volumes:
         - name: pyspark-notebook-data
           persistentVolumeClaim:
             claimName: pvc-pyspark-notebook-data
+          
+        # -----------------------------
+        # Volumes (RPC config)
+        # -----------------------------
+        - name: rpc-config
+          configMap:
+            name: blockchain-rpc-config
+
 ---
 apiVersion: v1
 kind: Service

@@ -118,5 +118,5 @@ kubectl logs -n airflow bsc-logs-ingestion-b548dcf69-ftxzh --previous
 
 Search logs inside the POD:
 kubectl logs -n airflow deploy/bsc-logs-ingestion \
-  | jq 'select(.level=="ERROR")'
+  | jq 'select(.level=="WARNING")'
 

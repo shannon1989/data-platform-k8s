@@ -1,0 +1,163 @@
+{
+  "id": null,
+  "title": "BSC Ingestion – Production Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "tags": ["bsc", "ingestion", "blockchain", "production"],
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(bsc_ingestion_checkpoint_lag, job)",
+        "refresh": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Checkpoint Lag (blocks)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "bsc_ingestion_checkpoint_lag{job=\"$job\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Chain Head vs Ingestion Checkpoint",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "bsc_chain_latest_block{job=\"$job\"}",
+          "legendFormat": "chain_head",
+          "refId": "A"
+        },
+        {
+          "expr": "bsc_ingestion_checkpoint{job=\"$job\"}",
+          "legendFormat": "checkpoint",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Transactions per Second",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(bsc_ingestion_tx_total{job=\"$job\"}[1m])",
+          "legendFormat": "tx/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Blocks per Second",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(bsc_ingestion_block_total{job=\"$job\"}[1m])",
+          "legendFormat": "blocks/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "RPC Requests / sec",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(bsc_rpc_requests_total[1m])",
+          "legendFormat": "{{rpc}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "RPC Errors / sec",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(bsc_rpc_errors_total[1m])",
+          "legendFormat": "{{rpc}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "RPC Error Rate (%)",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * rate(bsc_rpc_errors_total[1m]) / rate(bsc_rpc_requests_total[1m])",
+          "legendFormat": "{{rpc}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Tx per Block (P50 / P90 / P99)",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 5 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(bsc_ingestion_tx_per_block_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.9, sum(rate(bsc_ingestion_tx_per_block_bucket[5m])) by (le))",
+          "legendFormat": "p90",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(bsc_ingestion_tx_per_block_bucket[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    }
+  ]
+}

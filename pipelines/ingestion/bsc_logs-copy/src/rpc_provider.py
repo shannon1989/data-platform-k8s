@@ -4,6 +4,7 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 from src.rpc_context import set_current_rpc
 from src.metrics import RPC_REQUESTS, RPC_ERRORS
+from src.logging import log
 
 # -----------------------------
 # RPC Provider config
@@ -15,13 +16,11 @@ class RpcProvider:
         self.base_weight = weight
         self.current_weight = weight
         self.cooldown_until = 0
-        self.errors = 0
 
     def available(self):
         return time.time() >= self.cooldown_until
 
-    def penalize(self, seconds=10):
-        self.errors += 1
+    def penalize(self, seconds=15):
         self.current_weight = max(1, self.current_weight - 1)
         self.cooldown_until = time.time() + seconds
 
@@ -29,50 +28,37 @@ class RpcProvider:
         if self.current_weight < self.base_weight:
             self.current_weight += 1
 
+
 class RpcPool:
     def __init__(self, providers):
         self.providers = providers
-        self.queue = deque()
 
-    def _rebuild_queue(self):
-        self.queue.clear()
+    def get_available_providers(self):
+        candidates = []
         for p in self.providers:
             if p.available():
-                self.queue.extend([p] * p.current_weight)
-        random.shuffle(self.queue)
+                candidates.extend([p] * p.current_weight)
 
-    def pick(self):
-        if not self.queue:
-            self._rebuild_queue()
-        if not self.queue:
-            raise RuntimeError("No RPC provider available (all in cooldown)")
-        return self.queue.popleft()
-
-
+        random.shuffle(candidates)
+        return candidates
 
 
 class Web3Router:
-    def __init__(
-        self,
-        rpc_pool,
-        max_attempts=None,
-        penalize_seconds=15,
-    ):
+    def __init__(self, rpc_pool, timeout=10, penalize_seconds=15):
         self.rpc_pool = rpc_pool
-        self.max_attempts = max_attempts or len(rpc_pool.providers)
+        self.timeout = timeout
         self.penalize_seconds = penalize_seconds
 
     def call(self, fn):
         last_exc = None
-        attempted = set()
 
-        for _ in range(self.max_attempts):
-            provider = self.rpc_pool.pick()
+        providers = self.rpc_pool.get_available_providers()
+        used = set()
 
-            # 防止同一个 call 重复用同一个 provider
-            if provider.name in attempted:
+        for provider in providers:
+            if provider.name in used:
                 continue
-            attempted.add(provider.name)
+            used.add(provider.name)
 
             set_current_rpc(provider.name)
             RPC_REQUESTS.labels(rpc=provider.name).inc()
@@ -80,9 +66,7 @@ class Web3Router:
             w3 = Web3(
                 Web3.HTTPProvider(
                     provider.url,
-                    request_kwargs={
-                        "timeout": 10,   # ⛔ 防止卡死
-                    },
+                    request_kwargs={"timeout": self.timeout},
                 )
             )
             w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
@@ -93,15 +77,26 @@ class Web3Router:
                 return result
 
             except Exception as e:
-                last_exc = e
-
-                provider.penalize(seconds=self.penalize_seconds)
+                log.warning(
+                    "rpc_failover",
+                    extra={
+                        "event": "rpc_failover",
+                        "rpc": provider.name,
+                        "error": str(e)[:200],
+                    },
+                )
                 RPC_ERRORS.labels(rpc=provider.name).inc()
+                last_exc = e
+                provider.penalize(self.penalize_seconds)
+                continue  # 🔥 立刻换下一个
 
-                # 🔥 关键：直接 failover，下一个
-                continue
+        # 注意：这里只说明「这一轮不可用」
+        log.error(
+            "rpc_round_failed",
+            extra={
+                "event": "rpc_round_failed",
+                "attempted": list(used),
+            },
+        )
 
-        # 所有 RPC 都失败
-        raise RuntimeError(
-            f"All RPC providers failed after {len(attempted)} attempts"
-        ) from last_exc
+        raise print("All RPC providers failed in this round") from last_exc

@@ -36,6 +36,7 @@ TX_PER_BLOCK = Histogram(
     buckets=(10, 50, 100, 200, 500, 1000, 2000),
 )
 
+# RPC
 RPC_REQUESTS = Counter(
     "bsc_rpc_requests_total",
     "RPC requests by provider",
@@ -46,3 +47,10 @@ RPC_ERRORS = Counter(
     "RPC errors by provider",
     ["rpc"]
 )
+
+
+KAFKA_TX_FAILURE = Counter(
+                "bsc_kafka_transaction_failed_total",
+                "Kafka transaction failures",
+                ["job"],
+            )

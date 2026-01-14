@@ -1,0 +1,153 @@
+{
+  "chains": {
+    "bsc": {
+      "chain_id": 56,
+      "network": "mainnet",
+      "type": "evm",
+      "providers": [
+        {
+        "name": "infura",
+        "url_template": "https://bsc-mainnet.infura.io/v3/{INFURA_API_KEY}",
+        "weight": 5,
+        "enabled": true
+        },
+        {
+          "name": "blockpi",
+          "url_template": "https://bsc.blockpi.network/v1/rpc/{BLOCKPI_API_KEY}",
+          "weight": 10,
+          "enabled": true
+        },
+        {
+          "name": "alchemy",
+          "url_template": "https://bnb-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "dwellir",
+          "url_template": "https://api-bsc-mainnet-full.n.dwellir.com/{DWELLIR_API_KEY}",
+          "weight": 5,
+          "enabled": false
+        },
+        {
+          "name": "getblock",
+          "url_template": "https://go.getblock.asia/{GETBLOCK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "chainstack",
+          "url_template": "https://bsc-mainnet.core.chainstack.com/{CHAINSTACK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "ankr",
+          "url_template": "https://rpc.ankr.com/bsc/{ANKR_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        }
+      ]
+    },
+
+    "ethereum": {
+      "chain_id": 1,
+      "network": "mainnet",
+      "type": "evm",
+      "providers": [
+        {
+        "name": "infura",
+        "url_template": "https://bsc-mainnet.infura.io/v3/{INFURA_API_KEY}",
+        "weight": 5,
+        "enabled": true
+        },
+        {
+          "name": "blockpi",
+          "url_template": "https://bsc.blockpi.network/v1/rpc/{BLOCKPI_API_KEY}",
+          "weight": 10,
+          "enabled": true
+        },
+        {
+          "name": "alchemy",
+          "url_template": "https://bnb-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "dwellir",
+          "url_template": "https://api-bsc-mainnet-full.n.dwellir.com/{DWELLIR_API_KEY}",
+          "weight": 5,
+          "enabled": false
+        },
+        {
+          "name": "getblock",
+          "url_template": "https://go.getblock.asia/{GETBLOCK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "chainstack",
+          "url_template": "https://bsc-mainnet.core.chainstack.com/{CHAINSTACK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "ankr",
+          "url_template": "https://rpc.ankr.com/bsc/{ANKR_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        }
+      ]
+    },
+
+    "base": {
+      "chain_id": 8453,
+      "network": "mainnet",
+      "type": "evm",
+      "providers": [
+        {
+        "name": "infura",
+        "url_template": "https://bsc-mainnet.infura.io/v3/{INFURA_API_KEY}",
+        "weight": 5,
+        "enabled": true
+        },
+        {
+          "name": "blockpi",
+          "url_template": "https://bsc.blockpi.network/v1/rpc/{BLOCKPI_API_KEY}",
+          "weight": 10,
+          "enabled": true
+        },
+        {
+          "name": "alchemy",
+          "url_template": "https://bnb-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "dwellir",
+          "url_template": "https://api-bsc-mainnet-full.n.dwellir.com/{DWELLIR_API_KEY}",
+          "weight": 5,
+          "enabled": false
+        },
+        {
+          "name": "getblock",
+          "url_template": "https://go.getblock.asia/{GETBLOCK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "chainstack",
+          "url_template": "https://bsc-mainnet.core.chainstack.com/{CHAINSTACK_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        },
+        {
+          "name": "ankr",
+          "url_template": "https://rpc.ankr.com/bsc/{ANKR_API_KEY}",
+          "weight": 5,
+          "enabled": true
+        }
+      ]
+    }
+  }
+}

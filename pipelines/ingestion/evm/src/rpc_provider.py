@@ -85,10 +85,9 @@ class Web3Router:
                         "error": str(e)[:200],
                     },
                 )
-
+                RPC_ERRORS.labels(rpc=provider.name).inc()
                 last_exc = e
                 provider.penalize(self.penalize_seconds)
-                RPC_ERRORS.labels(rpc=provider.name).inc()
                 continue  # 🔥 立刻换下一个
 
         # 注意：这里只说明「这一轮不可用」

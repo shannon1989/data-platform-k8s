@@ -4,6 +4,9 @@ import json
 from datetime import datetime, timezone
 from src.rpc_context import get_current_rpc
 
+# -----------------------------
+# JSON formatter (Loki / OpenSearch)
+# -----------------------------
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         log = {
