@@ -121,3 +121,33 @@ Search logs inside the POD:
 kubectl logs -n airflow deploy/base-logs-ingestion \
   | jq 'select(.level=="WARNING")'
 ```
+
+开源组件：stakater/reloader
+kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/master/deployments/kubernetes/reloader.yaml
+
+metadata:
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+ConfigMap 一改 -> Pod 自动重启
+
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）Kafka EOS 安全
+
+Loki安装：
+```bash
+helm install loki grafana/loki-stack \
+  --namespace prometheus \
+  --set grafana.enabled=false \
+  --set promtail.enabled=true
+```
+
+修改 promtail DaemonSet（最有效）
+kubectl -n prometheus edit ds loki-promtail
+securityContext:
+  runAsUser: 0
+
+- name: PROMTAIL_ULIMIT_NOFILE
+  value: "65536"

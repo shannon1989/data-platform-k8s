@@ -74,8 +74,8 @@ class Web3Router:
             used.add(provider.name)
 
             set_current_rpc(provider.name)
-            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc()
-
+            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc()          
+            
             w3 = Web3(
                 Web3.HTTPProvider(
                     provider.url,

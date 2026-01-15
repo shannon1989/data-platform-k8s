@@ -15,7 +15,6 @@ from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
 from src.web3_utils import fetch_block_logs, to_json_safe, current_utctime
 from src.rpc_provider import RpcTemporarilyUnavailable
-
 # -----------------------------
 # Environment Variables
 # -----------------------------
@@ -26,9 +25,21 @@ BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction 
 CHAIN = os.getenv("CHAIN", "base").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
 
 # -----------------------------
-# Config
+# Behavior Control
 # -----------------------------
-JOB_NAME = f"{CHAIN}_realtime" + "_" + current_utctime()
+# If True -> resume from last processed block using Kafka state topic
+# If False -> start from latest block
+RESUME_FROM_LAST = os.getenv("RESUME_FROM_LAST", "True").lower() in ("1", "true", "yes")
+
+# -----------------------------
+# Job Name & Kafka IDs
+# -----------------------------
+if RESUME_FROM_LAST:
+    JOB_NAME = f"{CHAIN}_realtime"        # 固定名，Kafka checkpoint 能被复用
+else:
+    JOB_NAME = f"{CHAIN}_realtime_{current_utctime()}"  # 每次唯一，从最新block开始
+
+
 TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{JOB_NAME}"
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
@@ -48,7 +59,6 @@ def build_rpc_url(cfg: dict) -> str:
     """
     base_url = cfg["base_url"]
     key_env = cfg.get("api_key_env")
-
     # Public RPC
     if not key_env:
         return base_url
@@ -59,7 +69,7 @@ def build_rpc_url(cfg: dict) -> str:
             f"Missing env var for RPC provider "
             f"{cfg['name']}: {key_env}"
         )
-
+    
     return f"{base_url}/{api_key}"
 
 def build_rpc_pool(rpc_configs: dict, chain: str) -> "RpcPool":
@@ -77,7 +87,7 @@ def build_rpc_pool(rpc_configs: dict, chain: str) -> "RpcPool":
 
         providers.append(
             RpcProvider(
-                name=f"{cfg['name']}@{chain}",
+                name=cfg['name'],
                 url=url,
                 weight=int(cfg.get("weight", 1)),
             )

@@ -6,8 +6,13 @@ metadata:
   labels:
     app: logs-ingestion
     chain: base
+  annotations:
+    reloader.stakater.com/auto: "true"
+    
 spec:
   replicas: 1
+  # strategy:
+  #   type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）
   selector:
     matchLabels:
       app: logs-ingestion
@@ -22,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.1.1
+          image: evm-kafka-ingestion:0.1.5
           imagePullPolicy: IfNotPresent
           command: ["python", "blockchain_realtime_logs.py"]
 
@@ -35,10 +40,11 @@ spec:
             - name: BATCH_TX_SIZE
               value: "10"
             - name: POLL_INTERVAL
-              value: "0.1" # Avoid RPC error "Max retries exceeded"
+              value: "1" # Avoid RPC error "Max retries exceeded"
             - name: CHAIN
               value: "base"
-              
+            - name: RESUME_FROM_LAST
+              value: "true"
           # -----------------------------
           # Metrics endpoint
           # -----------------------------

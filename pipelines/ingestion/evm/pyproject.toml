@@ -1,7 +1,7 @@
 [project]
-name = "eth_backfill_job"
-version = "0.1.0"
-description = "ETH backfill job back image"
+name = "blockchain_ingestion_job"
+version = "1.0.0"
+description = "blockchain kafka ingestion job back image"
 requires-python = ">=3.11"
 dependencies = [
     "confluent-kafka>=2.12.2",
