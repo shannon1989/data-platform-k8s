@@ -1,56 +1,64 @@
 from prometheus_client import Counter, Gauge, Histogram
 
+# -----------------------------
 # Lag metrics
+# -----------------------------
 CHECKPOINT_LAG = Gauge(
-    "bsc_ingestion_checkpoint_lag",
+    "ingestion_checkpoint_lag",
     "Block lag between chain head and ingestion checkpoint",
-    ["job"],
+    ["chain", "job"],
 )
 CHAIN_LATEST_BLOCK = Gauge(
-    "bsc_chain_latest_block",
+    "chain_latest_block",
     "Latest block number on chain",
-    ["job"],
+    ["chain", "job"],
 )
 CHECKPOINT_BLOCK = Gauge(
-    "bsc_ingestion_checkpoint",
+    "ingestion_checkpoint",
     "Last committed block by ingestion job",
-    ["job"],
+    ["chain", "job"],
 )
 
+# -----------------------------
 # Throughput
+# -----------------------------
 TX_PROCESSED = Counter(
-    "bsc_ingestion_tx_total",
+    "ingestion_tx_total",
     "Total number of transactions processed",
-    ["job"],
+    ["chain", "job"],
 )
 BLOCK_PROCESSED = Counter(
-    "bsc_ingestion_block_total",
+    "ingestion_block_total",
     "Total number of blocks processed",
-    ["job"],
+    ["chain", "job"],
 )
 
 TX_PER_BLOCK = Histogram(
-    "bsc_ingestion_tx_per_block",
+    "ingestion_tx_per_block",
     "Transactions per block",
-    ["job"],
+    ["chain", "job"],
     buckets=(10, 50, 100, 200, 500, 1000, 2000),
 )
 
+# -----------------------------
 # RPC
+# -----------------------------
 RPC_REQUESTS = Counter(
-    "bsc_rpc_requests_total",
+    "rpc_requests_total",
     "RPC requests by provider",
-    ["rpc"]
+    ["chain", "rpc"]
 )
 RPC_ERRORS = Counter(
-    "bsc_rpc_errors_total",
+    "rpc_errors_total",
     "RPC errors by provider",
-    ["rpc"]
+    ["chain", "rpc"]
 )
 
-
+# -----------------------------
+# Kafka
+# -----------------------------
 KAFKA_TX_FAILURE = Counter(
-                "bsc_kafka_transaction_failed_total",
+                "kafka_transaction_failed_total",
                 "Kafka transaction failures",
-                ["job"],
+                ["chain", "job"],
             )

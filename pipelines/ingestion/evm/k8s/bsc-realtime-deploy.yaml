@@ -4,7 +4,8 @@ metadata:
   name: bsc-logs-ingestion
   namespace: airflow
   labels:
-    app: bsc-logs-ingestion
+    app: logs-ingestion
+    chain: bsc
 spec:
   replicas: 1
   selector:
@@ -13,13 +14,14 @@ spec:
   template:
     metadata:
       labels:
-        app: bsc-logs-ingestion
+        app: logs-ingestion
+        chain: bsc
     spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       containers:
-        - name: bsc-logs-ingestion
-          image: bsc-realtime-logs:0.2.5
+        - name: ingestion
+          image: evm-kafka-ingestion:0.1.0
           imagePullPolicy: IfNotPresent
           command: ["python", "bsc_realtime_logs.py"]
 
@@ -34,7 +36,7 @@ spec:
             - name: POLL_INTERVAL
               value: "0.1" # Avoid RPC error "Max retries exceeded"
             - name: CHAIN
-              value: "base"
+              value: "bsc"
               
           # -----------------------------
           # Metrics endpoint

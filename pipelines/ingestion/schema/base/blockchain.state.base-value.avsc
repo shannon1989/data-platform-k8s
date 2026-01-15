@@ -1,0 +1,45 @@
+{
+  "type": "record",
+  "name": "IngestionState",
+  "namespace": "blockchain.state",
+  "doc": "Ingestion progress and control state for blockchain pipelines",
+  "fields": [
+    {
+      "name": "job_name",
+      "type": "string",
+      "doc": "bsc_realtime_mainnet / bsc_backfill_job"
+    },
+    {
+      "name": "run_id",
+      "type": "string"
+    },
+    {
+      "name": "range",
+      "type": {
+        "type": "record",
+        "name": "BlockRange",
+        "fields": [
+          { "name": "start", "type": "long" },
+          { "name": "end", "type": "long" }
+        ]
+      }
+    },
+    {
+      "name": "checkpoint",
+      "type": "long"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "IngestionStatus",
+        "symbols": ["running", "stopped", "completed", "failed"]
+      }
+    },
+    {
+      "name": "inserted_at",
+      "type": "string",
+      "doc": "ISO-8601 ingestion timestamp"
+    }
+  ]
+}

@@ -7,12 +7,14 @@ import uuid
 import time
 from confluent_kafka.serialization import SerializationContext, MessageField
 from prometheus_client import start_http_server
+from confluent_kafka import KafkaException
 from src.metrics import *
 from src.logging import log
 from src.rpc_provider import RpcProvider, RpcPool, Web3Router
 from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
 from src.web3_utils import fetch_block_logs, to_json_safe, current_utctime
+from src.rpc_provider import RpcTemporarilyUnavailable
 
 # -----------------------------
 # Environment Variables
@@ -87,7 +89,12 @@ def build_rpc_pool(rpc_configs: dict, chain: str) -> "RpcPool":
     return RpcPool(providers)
 
 rpc_pool = build_rpc_pool(rpc_configs, CHAIN)
-web3_router = Web3Router(rpc_pool)
+web3_router = Web3Router(
+    rpc_pool=rpc_pool,
+    chain=CHAIN,
+    timeout=10,
+    penalize_seconds=15,
+)
 
 # -----------------------------
 # Kafka Producer initialization
@@ -113,6 +120,7 @@ def fetch_and_push():
         "job_start",
         extra={
             "event": "job_start",
+            "chain": CHAIN,
             "job": JOB_NAME,
             "start_block": last_block + 1,
         },
@@ -123,9 +131,9 @@ def fetch_and_push():
     while True:
         try:
             latest_block = web3_router.call(lambda w3: w3.eth.block_number)
-            CHAIN_LATEST_BLOCK.labels(job=JOB_NAME).set(latest_block)
-            CHECKPOINT_BLOCK.labels(job=JOB_NAME).set(last_block)
-            CHECKPOINT_LAG.labels(job=JOB_NAME).set(
+            CHAIN_LATEST_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(latest_block)
+            CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
+            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(
                 max(0, latest_block - last_block)
             )
 
@@ -197,15 +205,16 @@ def fetch_and_push():
                         "block_processed",
                         extra={
                             "event": "block_processed",
+                            "chain": CHAIN,
                             "job": JOB_NAME,
                             "block": bn,
                             "tx": total_tx,
                         },
                     )
 
-                BLOCK_PROCESSED.labels(job=JOB_NAME).inc()
-                TX_PROCESSED.labels(job=JOB_NAME).inc(total_tx)
-                TX_PER_BLOCK.labels(job=JOB_NAME).observe(total_tx)
+                BLOCK_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc()
+                TX_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc(total_tx)
+                TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_NAME).observe(total_tx)
 
             # -----------------------------
             # Commit state
@@ -237,6 +246,7 @@ def fetch_and_push():
                 "batch_committed",
                 extra={
                     "event": "batch_committed",
+                    "chain": CHAIN,
                     "job": JOB_NAME,
                     "blocks": block_count,
                     "tx": batch_tx_total,
@@ -245,33 +255,52 @@ def fetch_and_push():
                 },
             )
 
-            CHECKPOINT_BLOCK.labels(job=JOB_NAME).set(last_block)
-            CHECKPOINT_LAG.labels(job=JOB_NAME).set(
+            CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
+            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(
                 max(0, latest_block - last_block)
             )
 
-        except Exception as e:
-            # -----------------------------
-            # 🚨 Kafka / RPC / Runtime failure
-            # -----------------------------
-            log.exception(
-                "transaction_failed",
+        # -------------------------------------------------
+        # 🟡 1️⃣ RPC 临时不可用（最轻）
+        # -------------------------------------------------
+        except RpcTemporarilyUnavailable:
+            log.warning(
+                "rpc_temporarily_unavailable",
                 extra={
-                    "event": "transaction_failed",
+                    "event": "rpc_temporarily_unavailable",
+                    "chain": CHAIN,
                     "job": JOB_NAME,
                     "last_block": last_block,
                 },
             )
-            
-            KAFKA_TX_FAILURE.labels(job=JOB_NAME).set(last_block)
 
+            # ❗ 不碰 Kafka 事务
+            time.sleep(2)
+            continue
+
+        # -------------------------------------------------
+        # 🔶 2️⃣ Kafka 事务失败（需要 abort + 重建）
+        # -------------------------------------------------
+        except KafkaException as e:
+            log.exception(
+                "kafka_transaction_failed",
+                extra={
+                    "event": "kafka_transaction_failed",
+                    "chain": CHAIN,
+                    "job": JOB_NAME,
+                    "last_block": last_block,
+                },
+            )
+
+            KAFKA_TX_FAILURE.labels(chain=CHAIN, job=JOB_NAME).inc()
+            
             # best-effort abort
             try:
                 producer.abort_transaction()
             except Exception:
                 pass
-
-            # ❗️关键：销毁 producer
+            
+            # ❗️销毁 producer
             try:
                 producer.flush(5)
             except Exception:
@@ -281,12 +310,31 @@ def fetch_and_push():
 
             # backoff，防止抖动
             time.sleep(3)
-
             # 重新创建 producer（新的事务上下文）
             producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
-
             # ❗️不 raise，继续 while True
             continue
+
+        # -------------------------------------------------
+        # 🔴 3️⃣ 真正不可恢复的程序错误
+        # -------------------------------------------------
+        except Exception as e:
+            # -----------------------------
+            # 🚨 Runtime failure
+            # -----------------------------
+            log.exception(
+                "fatal_runtime_error",
+                extra={
+                    "event": "fatal_runtime_error",
+                    "chain": CHAIN,
+                    "job": JOB_NAME,
+                    "last_block": last_block,
+                    "error_type": type(e).__name__,
+                },
+            )
+            
+            # ❗ 这里让 Pod 挂掉是正确的
+            raise
 
         time.sleep(POLL_INTERVAL)
 

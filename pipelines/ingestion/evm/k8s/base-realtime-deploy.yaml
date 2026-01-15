@@ -4,22 +4,25 @@ metadata:
   name: base-logs-ingestion
   namespace: airflow
   labels:
-    app: base-logs-ingestion
+    app: logs-ingestion
+    chain: base
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: base-logs-ingestion
+      app: logs-ingestion
+      chain: base
   template:
     metadata:
       labels:
-        app: base-logs-ingestion
+        app: logs-ingestion
+        chain: base
     spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       containers:
-        - name: base-logs-ingestion
-          image: blockchain-realtime-logs:0.1.0
+        - name: ingestion
+          image: evm-kafka-ingestion:0.1.1
           imagePullPolicy: IfNotPresent
           command: ["python", "blockchain_realtime_logs.py"]
 

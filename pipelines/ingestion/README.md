@@ -117,6 +117,7 @@ Check previous log:
 kubectl logs -n airflow bsc-logs-ingestion-b548dcf69-ftxzh --previous
 
 Search logs inside the POD:
-kubectl logs -n airflow deploy/bsc-logs-ingestion \
+```bash
+kubectl logs -n airflow deploy/base-logs-ingestion \
   | jq 'select(.level=="WARNING")'
-
+```

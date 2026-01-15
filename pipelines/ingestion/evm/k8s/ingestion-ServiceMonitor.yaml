@@ -1,18 +1,18 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: bsc-logs-ingestion
+  name: logs-ingestion
   namespace: prometheus
   labels:
-    release: prometheus        # service discovery for prometheus
+    release: prometheus
 spec:
   namespaceSelector:
     matchNames:
       - airflow
   selector:
     matchLabels:
-      app: bsc-logs-ingestion
+      app: logs-ingestion
   endpoints:
     - port: metrics
       path: /metrics
-      interval: 15s
+      interval: 10s
