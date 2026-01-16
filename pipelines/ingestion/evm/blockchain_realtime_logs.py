@@ -40,7 +40,7 @@ else:
     JOB_NAME = f"{CHAIN}_realtime_{current_utctime()}"  # 每次唯一，从最新block开始
 
 
-TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{JOB_NAME}"
+TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"

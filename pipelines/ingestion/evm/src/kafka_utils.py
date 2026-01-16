@@ -25,7 +25,7 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
         # Exactly-once / Transactions
         "enable.idempotence": True,
         "acks": "all",
-        "transactional.id": TRANSACTIONAL_ID,
+        "transactional.id": TRANSACTIONAL_ID, # 在整个 Kafka 集群（cluster）范围内唯一
         
         # retry
         "retries": 1000000,
