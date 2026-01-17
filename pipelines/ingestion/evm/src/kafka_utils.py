@@ -11,7 +11,7 @@ def delivery_report(err, msg):
         log.error(
             "kafka_delivery_failed",
             extra={
-                "event": "kafka_delivery_failed",
+                # "event": "kafka_delivery_failed",
                 "topic": msg.topic(),
                 "partition": msg.partition(),
                 "error": str(err),

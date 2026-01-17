@@ -24,16 +24,17 @@ class CommitTimer:
         # ⭐ 计算 avg_rpc_cost
         # -----------------------------
         avg_rpc_cost = {}
+        rpc_cost_sec = {}
         for rpc_name, total_cost in self.rpc_cost.items():
             calls = self.rpc_calls.get(rpc_name, 0)
             if calls > 0:
-                avg_rpc_cost[rpc_name] = round(
-                    total_cost / calls, 4
-                )
+                avg_rpc_cost[rpc_name] = round(total_cost / calls, 4)
+                rpc_cost_sec[rpc_name] = round(total_cost, 2)
 
+        
         snapshot = {
             "commit_interval_sec": delta,
-            "rpc_cost_sec": dict(self.rpc_cost),
+            "rpc_cost_sec": rpc_cost_sec,
             "rpc_calls": dict(self.rpc_calls),
             "avg_rpc_cost": avg_rpc_cost,
         }

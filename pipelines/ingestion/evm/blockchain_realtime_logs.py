@@ -132,7 +132,7 @@ def fetch_and_push():
     log.info(
         "job_start",
         extra={
-            "event": "job_start",
+            # "event": "job_start",
             "chain": CHAIN,
             "job": JOB_NAME,
             "start_block": last_block + 1,
@@ -171,7 +171,6 @@ def fetch_and_push():
 
             batch_tx_total = 0
             block_count = 0
-
 
             for range_start in range(
                 batch_start,
@@ -254,11 +253,11 @@ def fetch_and_push():
                         producer.poll(0)
 
 
-                    if bn % 100 == 0:
+                    if bn % 1000 == 0:
                         log.info(
                             "block_processed",
                             extra={
-                                "event": "block_processed",
+                                # "event": "block_processed",
                                 "chain": CHAIN,
                                 "job": JOB_NAME,
                                 "block": bn,
@@ -270,6 +269,7 @@ def fetch_and_push():
                     TX_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc(total_tx)
                     TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_NAME).observe(total_tx)
            
+            
             # -----------------------------
             # Commit state
             # -----------------------------
@@ -301,16 +301,16 @@ def fetch_and_push():
             log.info(
                 "batch_committed",
                 extra={
-                    "event": "batch_committed",
+                    # "event": "batch_committed",
                     "chain": CHAIN,
                     "job": JOB_NAME,
                     
                     # 与 state topic 100% 一致
-                    "batch_range_start": batch_start,
-                    "batch_range_end": batch_end,
+                    "range_start": batch_start,
+                    "range_end": batch_end,
 
                     # 实际处理情况
-                    "blocks_with_logs": block_count,
+                    "blocks": block_count,
                     "tx": batch_tx_total,
                     
                     # metrics
@@ -320,7 +320,7 @@ def fetch_and_push():
                     # "avg_rpc_cost": commit_metrics["avg_rpc_cost"]
                 },
             )
-
+            
             CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
             CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
 
@@ -331,7 +331,7 @@ def fetch_and_push():
             log.warning(
                 "rpc_temporarily_unavailable",
                 extra={
-                    "event": "rpc_temporarily_unavailable",
+                    # "event": "rpc_temporarily_unavailable",
                     "chain": CHAIN,
                     "job": JOB_NAME,
                     "last_block": last_block,
@@ -349,7 +349,7 @@ def fetch_and_push():
             log.exception(
                 "kafka_transaction_failed",
                 extra={
-                    "event": "kafka_transaction_failed",
+                    # "event": "kafka_transaction_failed",
                     "chain": CHAIN,
                     "job": JOB_NAME,
                     "last_block": last_block,
@@ -389,7 +389,7 @@ def fetch_and_push():
             log.exception(
                 "fatal_runtime_error",
                 extra={
-                    "event": "fatal_runtime_error",
+                    # "event": "fatal_runtime_error",
                     "chain": CHAIN,
                     "job": JOB_NAME,
                     "last_block": last_block,

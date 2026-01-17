@@ -30,7 +30,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log, ensure_ascii=False)
 
 def setup_logging():
-    logger = logging.getLogger("bsc_ingestion")
+    logger = logging.getLogger("ingestion")
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())

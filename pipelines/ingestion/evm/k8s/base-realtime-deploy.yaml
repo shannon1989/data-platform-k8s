@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.1.7
+          image: evm-kafka-ingestion:0.1.8
           imagePullPolicy: IfNotPresent
           command: ["python", "blockchain_realtime_logs.py"]
 

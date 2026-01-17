@@ -1,7 +1,7 @@
 import time, random
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
-from src.rpc_context import set_current_rpc
+from src.rpc_context import set_current_rpc, get_current_rpc
 from src.metrics import RPC_REQUESTS, RPC_ERRORS
 from src.logging import log
 
@@ -24,31 +24,31 @@ class RpcProvider:
         self.current_weight = max(1, self.current_weight - 1)
         self.cooldown_until = time.time() + seconds
 
-        log.warning(
-            "rpc_penalized",
-            extra={
-                "event": "rpc_penalized",
-                "rpc": self.name,
-                "weight_before": before,
-                "weight_after": self.current_weight,
-                "cooldown_seconds": seconds,
-            },
-        )
+        # log.warning(
+        #     "rpc_penalized",
+        #     extra={
+        #         "event": "rpc_penalized",
+        #         "rpc": self.name,
+        #         "weight_before": before,
+        #         "weight_after": self.current_weight,
+        #         "cooldown_seconds": seconds,
+        #     },
+        # )
 
     def reward(self):
         if self.current_weight < self.base_weight:
             before = self.current_weight
             self.current_weight += 1
 
-            log.info(
-                "rpc_rewarded",
-                extra={
-                    "event": "rpc_rewarded",
-                    "rpc": self.name,
-                    "weight_before": before,
-                    "weight_after": self.current_weight,
-                },
-            )
+            # log.info(
+            #     "rpc_rewarded",
+            #     extra={
+            #         "event": "rpc_rewarded",
+            #         "rpc": self.name,
+            #         "weight_before": before,
+            #         "weight_after": self.current_weight,
+            #     },
+            # )
 
 
 
@@ -64,7 +64,13 @@ class RpcPool:
 
         random.shuffle(candidates)
         return candidates
-
+    
+    # ⭐ 新增
+    def get_provider(self, name: str):
+        for p in self.providers:
+            if p.name == name:
+                return p
+        return None
 
 class RpcTemporarilyUnavailable(Exception):
     pass
@@ -140,7 +146,7 @@ class Web3Router:
                 log.warning(
                     "rpc_failover",
                     extra={
-                        "event": "rpc_failover",
+                        # "event": "rpc_failover",
                         "chain": self.chain,
                         "rpc": provider.name,
                         "error": str(e)[:200],
@@ -158,7 +164,7 @@ class Web3Router:
         log.error(
             "rpc_round_failed",
             extra={
-                "event": "rpc_round_failed",
+                # "event": "rpc_round_failed",
                 "chain": self.chain,
                 "attempted": list(used),
                 "consecutive_failures": self.consecutive_failures,
@@ -185,3 +191,37 @@ class Web3Router:
         Returns (result, rpc_name)
         """
         return self._call_internal(fn, return_provider=True)
+
+
+    def rotate_provider(self, seconds: int | None = None):
+        """
+        Force current RPC into cooldown to rotate provider.
+
+        This is a soft rotate:
+        - penalize current provider
+        - next call will naturally pick another one
+
+        Args:
+            seconds: override penalize_seconds if provided
+        """
+        rpc_name = get_current_rpc()
+        if not rpc_name:
+            return
+
+        provider = self.rpc_pool.get_provider(rpc_name)
+        if not provider:
+            return
+
+        cooldown = seconds or self.penalize_seconds
+
+        provider.penalize(cooldown)
+
+        # log.info(
+        #     "rpc_rotated",
+        #     extra={
+        #         "event": "rpc_rotated",
+        #         "chain": self.chain,
+        #         "rpc": rpc_name,
+        #         "cooldown_seconds": cooldown,
+        #     },
+        # )

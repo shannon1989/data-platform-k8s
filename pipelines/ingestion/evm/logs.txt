@@ -69,3 +69,7 @@ fetch_and_push_range:
     "run_id": "75156f7e-651e-44c0-bb11-15401bc32b33",
     "status": "running"
 }
+
+{"ts": "2026-01-17T07:28:04.061Z", "level": "INFO", "logger": "bsc_ingestion", "msg": "batch_committed", "event": "batch_committed", "chain": "base", "job": "base_realtime", 
+"batch_range_start": 40885992, "batch_range_end": 40886001,
+ "blocks_with_logs": 0, "tx": 0, "commit_interval_sec": 2.854, "rpc_cost_sec": {"blockpi-D": 0.9978125095367432, "blockpi-A": 0.41476964950561523, "blockpi-B": 0.432692289352417}}

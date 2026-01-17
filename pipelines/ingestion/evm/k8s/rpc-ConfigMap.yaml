@@ -126,19 +126,27 @@ data:
           "network": "mainnet",
           "type": "evm",
           "providers": [
-            {"name": "infura-A","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_A","weight": 10,"enabled": true},
-            {"name": "infura-B","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_B","weight": 10,"enabled": true},
-            {"name": "infura-C","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 10,"enabled": true},
-            {"name": "blockpi-A","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_A","weight": 5,"enabled": true},
-            {"name": "blockpi-B","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_B","weight": 6,"enabled": true},
-            {"name": "blockpi-C","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_C","weight": 7,"enabled": true},
-            {"name": "blockpi-D","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_D","weight": 8,"enabled": true},
+            {"name": "infura-A","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_A","weight": 6,"enabled": true},
+            {"name": "infura-B","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_B","weight": 6,"enabled": true},
+            {"name": "infura-C","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 6,"enabled": true},
+            {"name": "infura-D","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 6,"enabled": true},
 
-            {"name": "alchemy","base_url": "https://base-mainnet.g.alchemy.com/v2","api_key_env": "ALCHEMY_API_KEY","weight": 10,"enabled": true},
-            {"name": "getblock","base_url": "https://go.getblock.asia","api_key_env": "GETBLOCK_BASE_API_KEY","weight": 10,"enabled": true},
-            {"name": "chainstack","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_API_KEY","weight": 9,"enabled": true},
-            {"name": "ankr","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY","weight": 9,"enabled": true},
-            {"name": "dwellir","base_url": "https://api-base-mainnet-archive.n.dwellir.com","api_key_env": "DWELLIR_API_KEY","weight": 10,"enabled": false}
+            {"name": "blockpi-A","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_A","weight": 1,"enabled": false},
+            {"name": "blockpi-B","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_B","weight": 1,"enabled": false},
+            {"name": "blockpi-C","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_C","weight": 1,"enabled": false},
+            {"name": "blockpi-D","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_D","weight": 1,"enabled": false},
+
+            {"name": "alchemy-A","base_url": "https://base-mainnet.g.alchemy.com/v2","api_key_env": "ALCHEMY_API_KEY_A","weight": 10,"enabled": true},
+            {"name": "alchemy-B","base_url": "https://base-mainnet.g.alchemy.com/v2","api_key_env": "ALCHEMY_API_KEY_B","weight": 10,"enabled": true},
+
+            {"name": "getblock-A","base_url": "https://go.getblock.asia","api_key_env": "GETBLOCK_BASE_KEY_A","weight": 10,"enabled": true},
+            {"name": "getblock-B","base_url": "https://go.getblock.asia","api_key_env": "GETBLOCK_BASE_KEY_B","weight": 10,"enabled": true},
+
+            {"name": "chainstack-A","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_KEY_A","weight": 9,"enabled": true},
+            {"name": "chainstack-B","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_KEY_B","weight": 9,"enabled": true},
+            
+            {"name": "ankr-A","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_A","weight": 9,"enabled": true},
+            {"name": "ankr-B","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_B","weight": 9,"enabled": true}
           ]
         }
       }
