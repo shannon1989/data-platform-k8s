@@ -13,15 +13,13 @@ from src.logging import log
 from src.rpc_provider import RpcProvider, RpcPool, Web3Router
 from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
-from src.web3_utils import fetch_range_logs, to_json_safe, current_utctime
+from src.web3_utils import fetch_block_logs, to_json_safe, current_utctime
 from src.rpc_provider import RpcTemporarilyUnavailable
-from src.commit_timer import CommitTimer
 # -----------------------------
 # Environment Variables
 # -----------------------------
 RUN_ID = os.getenv("RUN_ID", str(uuid.uuid4()))
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10")) # how many blocks for every commit to Kafka
-RANGE_SIZE = int(os.getenv("RANGE_SIZE", "5")) # how many blocks of range to fetch for logs
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "5")) # how many blocks in each batch
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # can be decimals
 BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction per batch within a single block
 CHAIN = os.getenv("CHAIN", "base").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
@@ -119,8 +117,7 @@ blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTR
 # -----------------------------
 def fetch_and_push():
     global producer
-    commit_timer = CommitTimer()
-    
+
     last_block = resolve_start_block(
         job_name=JOB_NAME,
         web3_router=web3_router,
@@ -143,25 +140,17 @@ def fetch_and_push():
 
     while True:
         try:
-            # -----------------------------
-            # 获取最新区块
-            # -----------------------------
-            t0 = time.time()
-            latest_block, rpc_name = web3_router.call_with_provider(lambda w3: w3.eth.block_number)
-            commit_timer.mark_rpc(rpc_name, time.time() - t0)
-            
+            latest_block = web3_router.call(lambda w3: w3.eth.block_number)
             CHAIN_LATEST_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(latest_block)
             CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
-            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
+            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(
+                max(0, latest_block - last_block)
+            )
 
             if last_block >= latest_block:
                 time.sleep(POLL_INTERVAL)
                 continue
-            
-            # -----------------------------
-            # # batch_start / batch_end define the immutable boundary of this batch
-            # -----------------------------
-            batch_start = last_block + 1
+
             batch_end = min(last_block + BATCH_SIZE, latest_block)
 
             # -----------------------------
@@ -172,111 +161,78 @@ def fetch_and_push():
             batch_tx_total = 0
             block_count = 0
 
+            for bn in range(last_block + 1, batch_end + 1):
+                block_logs = fetch_block_logs(web3_router, bn)
+                if block_logs is None:
+                    raise RuntimeError(f"block logs {bn} fetch failed")
 
-            for range_start in range(
-                batch_start,
-                batch_end + 1,
-                RANGE_SIZE,
-            ):
-                range_end = min(range_start + RANGE_SIZE - 1, batch_end)
+                block_logs_safe = to_json_safe(block_logs)
 
-                t0 = time.time()
-                range_logs, rpc_name = fetch_range_logs(
-                    web3_router,
-                    range_start,
-                    range_end,
-                    with_provider=True,
-                )
-                commit_timer.mark_rpc(rpc_name, time.time() - t0)
-
-                if range_logs is None:
+                if isinstance(block_logs_safe, dict):
+                    transactions = block_logs_safe.get(
+                        "transactions", [block_logs_safe]
+                    )
+                elif isinstance(block_logs_safe, list):
+                    transactions = block_logs_safe
+                else:
                     raise RuntimeError(
-                        f"range logs {range_start}-{range_end} fetch failed"
+                        f"Unexpected block_logs type: {type(block_logs_safe)}"
                     )
 
-                range_logs_safe = to_json_safe(range_logs)
+                total_tx = len(transactions)
+                batch_tx_total += total_tx
+                block_count += 1
 
-                if not isinstance(range_logs_safe, list):
-                    raise RuntimeError(
-                        f"Unexpected range_logs type: {type(range_logs_safe)}"
-                    )
+                for start_idx in range(0, total_tx, BATCH_TX_SIZE):
+                    batch_tx = transactions[start_idx:start_idx + BATCH_TX_SIZE]
 
-                # -----------------------------------
-                # 按 blockNumber 分组
-                # -----------------------------------
-                logs_by_block = {}
+                    for idx, tx in enumerate(batch_tx, start=start_idx):
+                        tx_record = {
+                            "block_height": bn,
+                            "job_name": JOB_NAME,
+                            "run_id": RUN_ID,
+                            "inserted_at": current_utctime(),
+                            "raw": json.dumps(tx),
+                            "tx_index": idx,
+                        }
 
-                for log_item in range_logs_safe:
-                    bn = log_item.get("blockNumber")
-                    if bn is None:
-                        continue
-
-                    if isinstance(bn, str):
-                        bn = int(bn, 16)
-
-                    logs_by_block.setdefault(bn, []).append(log_item)
-
-                # -----------------------------------
-                # 逐 block 处理
-                # -----------------------------------
-                for bn, transactions in logs_by_block.items():
-                    total_tx = len(transactions)
-                    batch_tx_total += total_tx
-                    block_count += 1
-
-                    for start_idx in range(0, total_tx, BATCH_TX_SIZE):
-                        batch_tx = transactions[
-                            start_idx : start_idx + BATCH_TX_SIZE
-                        ]
-
-                        for idx, tx in enumerate(batch_tx, start=start_idx):
-                            tx_record = {
-                                "block_height": bn,
-                                "job_name": JOB_NAME,
-                                "run_id": RUN_ID,
-                                "inserted_at": current_utctime(),
-                                "raw": json.dumps(tx),
-                                "tx_index": idx,
-                            }
-
-                            producer.produce(
-                                topic=BLOCKS_TOPIC,
-                                key=f"{bn}-{idx}",
-                                value=blocks_value_serializer(
-                                    tx_record,
-                                    SerializationContext(
-                                        BLOCKS_TOPIC, MessageField.VALUE
-                                    ),
+                        producer.produce(
+                            topic=BLOCKS_TOPIC,
+                            key=f"{bn}-{idx}",
+                            value=blocks_value_serializer(
+                                tx_record,
+                                SerializationContext(
+                                    BLOCKS_TOPIC, MessageField.VALUE
                                 ),
-                                on_delivery=delivery_report,
-                            )
-
-                        producer.poll(0)
-
-
-                    if bn % 100 == 0:
-                        log.info(
-                            "block_processed",
-                            extra={
-                                "event": "block_processed",
-                                "chain": CHAIN,
-                                "job": JOB_NAME,
-                                "block": bn,
-                                "tx": total_tx,
-                            },
+                            ),
+                            on_delivery=delivery_report,
                         )
-                        
-                    BLOCK_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc()
-                    TX_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc(total_tx)
-                    TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_NAME).observe(total_tx)
-           
+
+                    producer.poll(0)
+
+                if bn % 100 == 0:
+                    log.info(
+                        "block_processed",
+                        extra={
+                            "event": "block_processed",
+                            "chain": CHAIN,
+                            "job": JOB_NAME,
+                            "block": bn,
+                            "tx": total_tx,
+                        },
+                    )
+
+                BLOCK_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc()
+                TX_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc(total_tx)
+                TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_NAME).observe(total_tx)
+
             # -----------------------------
             # Commit state
             # -----------------------------
             state_record = {
                 "job_name": JOB_NAME,
                 "run_id": RUN_ID,
-                "range": {"start": batch_start, "end": batch_end},
+                "range": {"start": last_block + 1, "end": batch_end},
                 "checkpoint": batch_end,
                 "status": "running",
                 "inserted_at": current_utctime(),
@@ -296,33 +252,23 @@ def fetch_and_push():
 
             last_block = batch_end
 
-            commit_metrics = commit_timer.commit_cost()
-            
             log.info(
                 "batch_committed",
                 extra={
                     "event": "batch_committed",
                     "chain": CHAIN,
                     "job": JOB_NAME,
-                    
-                    # 与 state topic 100% 一致
-                    "batch_range_start": batch_start,
-                    "batch_range_end": batch_end,
-
-                    # 实际处理情况
-                    "blocks_with_logs": block_count,
+                    "blocks": block_count,
                     "tx": batch_tx_total,
-                    
-                    # metrics
-                    "commit_interval_sec": commit_metrics["commit_interval_sec"],
-                    "rpc_cost_sec": commit_metrics["rpc_cost_sec"],
-                    # "rpc_calls": commit_metrics["rpc_calls"],
-                    # "avg_rpc_cost": commit_metrics["avg_rpc_cost"]
+                    "range_start": last_block - block_count + 1,
+                    "range_end": last_block,
                 },
             )
 
             CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
-            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
+            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(
+                max(0, latest_block - last_block)
+            )
 
         # -------------------------------------------------
         # 🟡 1️⃣ RPC 临时不可用（最轻）

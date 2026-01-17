@@ -16,7 +16,7 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
-            "rpc": get_current_rpc(),
+            # "rpc": get_current_rpc(),
         }
         for key, value in record.__dict__.items():
             if key.startswith("_") or key in (

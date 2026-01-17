@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.1.6
+          image: evm-kafka-ingestion:0.1.7
           imagePullPolicy: IfNotPresent
           command: ["python", "blockchain_realtime_logs.py"]
 
@@ -35,12 +35,6 @@ spec:
           # Ingest runtime variables
           # -----------------------------
           env:
-            - name: BATCH_SIZE
-              value: "5"
-            - name: BATCH_TX_SIZE
-              value: "10"
-            - name: POLL_INTERVAL
-              value: "1" # Avoid RPC error "Max retries exceeded"
             - name: CHAIN
               value: "base"
             - name: RESUME_FROM_LAST

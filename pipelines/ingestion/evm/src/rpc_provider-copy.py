@@ -20,36 +20,12 @@ class RpcProvider:
         return time.time() >= self.cooldown_until
 
     def penalize(self, seconds=15):
-        before = self.current_weight
         self.current_weight = max(1, self.current_weight - 1)
         self.cooldown_until = time.time() + seconds
 
-        log.warning(
-            "rpc_penalized",
-            extra={
-                "event": "rpc_penalized",
-                "rpc": self.name,
-                "weight_before": before,
-                "weight_after": self.current_weight,
-                "cooldown_seconds": seconds,
-            },
-        )
-
     def reward(self):
         if self.current_weight < self.base_weight:
-            before = self.current_weight
             self.current_weight += 1
-
-            log.info(
-                "rpc_rewarded",
-                extra={
-                    "event": "rpc_rewarded",
-                    "rpc": self.name,
-                    "weight_before": before,
-                    "weight_after": self.current_weight,
-                },
-            )
-
 
 
 class RpcPool:
@@ -69,7 +45,6 @@ class RpcPool:
 class RpcTemporarilyUnavailable(Exception):
     pass
 
-
 class Web3Router:
     def __init__(
         self,
@@ -87,10 +62,7 @@ class Web3Router:
 
         self.consecutive_failures = 0  # ⭐ 关键状态
 
-    # -------------------------------------------------
-    # 🔒 Internal unified call
-    # -------------------------------------------------
-    def _call_internal(self, fn, return_provider: bool = False):
+    def call(self, fn):
         last_exc = None
 
         providers = self.rpc_pool.get_available_providers()
@@ -102,8 +74,8 @@ class Web3Router:
             used.add(provider.name)
 
             set_current_rpc(provider.name)
-            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc()
-
+            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc()          
+            
             w3 = Web3(
                 Web3.HTTPProvider(
                     provider.url,
@@ -115,25 +87,9 @@ class Web3Router:
             try:
                 result = fn(w3)
 
-                # ✅ 成功路径
+                # ✅ 成功路径：恢复权重 & 清零失败计数
                 provider.reward()
                 self.consecutive_failures = 0
-
-                # 功的路径不打印
-                # log.info(
-                #     "rpc_call_success",
-                #     extra={
-                #         "event": "rpc_call_success",
-                #         "chain": self.chain,
-                #         "rpc": provider.name,
-                #         "current_weight": provider.current_weight,
-                #         "base_weight": provider.base_weight,
-                #         "cooldown": not provider.available(),
-                #     },
-                # )
-                
-                if return_provider:
-                    return result, provider.name
                 return result
 
             except Exception as e:
@@ -149,10 +105,11 @@ class Web3Router:
                 RPC_ERRORS.labels(chain=self.chain, rpc=provider.name).inc()
                 provider.penalize(self.penalize_seconds)
                 last_exc = e
-                continue
+                continue  # 🔥 立刻换下一个
 
-        # ❌ 本轮全部失败
+        # ❌ 本轮所有 RPC 都失败
         self.consecutive_failures += 1
+
         backoff = min(5 * self.consecutive_failures, self.max_backoff)
 
         log.error(
@@ -166,22 +123,10 @@ class Web3Router:
             },
         )
 
+        # 🌙 关睡一会，而不是 raise
         time.sleep(backoff)
 
+        # ❗不抛异常，让上层继续 while True
         raise RpcTemporarilyUnavailable(
             f"RPC temporarily unavailable for chain={self.chain}"
         ) from last_exc
-
-    # -------------------------------------------------
-    # 🧱 Public APIs
-    # -------------------------------------------------
-    def call(self, fn):
-        """Backward-compatible API"""
-        return self._call_internal(fn, return_provider=False)
-
-    def call_with_provider(self, fn):
-        """
-        New API:
-        Returns (result, rpc_name)
-        """
-        return self._call_internal(fn, return_provider=True)

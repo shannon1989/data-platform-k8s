@@ -36,7 +36,7 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
         "batch.size": 262144,          # 256KB
         "compression.type": "lz4",
         
-        # Timeouts（avoid Erroneous state）
+        # Timeouts(avoid Erroneous state)
         "request.timeout.ms": 60000,
         "delivery.timeout.ms": 120000,
         "transaction.timeout.ms": 600000,  # 10 min
