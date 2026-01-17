@@ -16,7 +16,7 @@ class CommitTimer:
         if self.last_commit_ts is None:
             delta = None
         else:
-            delta = round(now - self.last_commit_ts, 3)
+            delta = round(now - self.last_commit_ts, 2)
 
         self.last_commit_ts = now
 

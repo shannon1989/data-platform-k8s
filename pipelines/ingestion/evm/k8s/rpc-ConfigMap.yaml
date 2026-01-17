@@ -126,10 +126,10 @@ data:
           "network": "mainnet",
           "type": "evm",
           "providers": [
-            {"name": "infura-A","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_A","weight": 6,"enabled": true},
-            {"name": "infura-B","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_B","weight": 6,"enabled": true},
-            {"name": "infura-C","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 6,"enabled": true},
-            {"name": "infura-D","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 6,"enabled": true},
+            {"name": "infura-A","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_A","weight": 8,"enabled": true},
+            {"name": "infura-B","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_B","weight": 8,"enabled": true},
+            {"name": "infura-C","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 8,"enabled": true},
+            {"name": "infura-D","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 8,"enabled": true},
 
             {"name": "blockpi-A","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_A","weight": 1,"enabled": false},
             {"name": "blockpi-B","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_B","weight": 1,"enabled": false},
@@ -146,7 +146,13 @@ data:
             {"name": "chainstack-B","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_KEY_B","weight": 9,"enabled": true},
             
             {"name": "ankr-A","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_A","weight": 9,"enabled": true},
-            {"name": "ankr-B","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_B","weight": 9,"enabled": true}
+            {"name": "ankr-B","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_B","weight": 9,"enabled": true},
+
+            {"name": "coinbase-A","base_url": "https://api.developer.coinbase.com/rpc/v1/base","api_key_env": "COINBASE_API_KEY_A","weight": 10,"enabled": true},
+            {"name": "drpc-A","base_url": "https://lb.drpc.live/base","api_key_env": "DRPC_API_KEY_A","weight": 10,"enabled": false},
+            {"name": "public-publicnode.com","base_url": "https://base-rpc.publicnode.com","weight": 10,"enabled": false},
+            {"name": "public-1rpc.io","base_url": "https://1rpc.io/base","weight": 10,"enabled": true}
+            
           ]
         }
       }
