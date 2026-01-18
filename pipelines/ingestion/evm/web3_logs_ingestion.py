@@ -3,6 +3,7 @@
 # -----------------------------
 import os
 import json
+import random
 import uuid
 import time
 from confluent_kafka.serialization import SerializationContext, MessageField
@@ -13,15 +14,17 @@ from src.logging import log
 from src.rpc_provider import RpcProvider, RpcPool, Web3Router
 from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
-from src.web3_utils import fetch_range_logs, to_json_safe, current_utctime
+from src.web3_utils import current_utctime
 from src.rpc_provider import RpcTemporarilyUnavailable
 from src.commit_timer import CommitTimer
+from src.batch_executor import SerialBatchExecutor, BatchContext, ParallelBatchExecutor
 # -----------------------------
 # Environment Variables
 # -----------------------------
 RUN_ID = os.getenv("RUN_ID", str(uuid.uuid4()))
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10")) # how many blocks for every commit to Kafka
-RANGE_SIZE = int(os.getenv("RANGE_SIZE", "5")) # how many blocks of range to fetch for logs
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "15")) # how many blocks for every commit to Kafka
+RANGE_SIZE = int(os.getenv("RANGE_SIZE", "3")) # how many blocks of range to fetch for logs
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", "5")) # how many worker thread for a batch range
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # can be decimals
 BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction per batch within a single block
 CHAIN = os.getenv("CHAIN", "base").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
@@ -29,20 +32,17 @@ CHAIN = os.getenv("CHAIN", "base").lower() # bsc, eth, base ... from blockchain-
 # -----------------------------
 # Behavior Control
 # -----------------------------
-# If True -> resume from last processed block using Kafka state topic
-# If False -> start from latest block
-RESUME_FROM_LAST = os.getenv("RESUME_FROM_LAST", "True").lower() in ("1", "true", "yes")
+JOB_MODE = os.getenv("JOB_MODE", "realtime").lower() # backfill or realtime, realtime by default
 
 # -----------------------------
 # Job Name & Kafka IDs
 # -----------------------------
-if RESUME_FROM_LAST:
-    JOB_NAME = f"{CHAIN}_realtime"        # 固定名，Kafka checkpoint 能被复用
+if JOB_MODE == "backfill":
+    JOB_NAME = f"{CHAIN}_{JOB_MODE}"        # 固定名，Kafka checkpoint 能被复用
 else:
-    JOB_NAME = f"{CHAIN}_realtime_{current_utctime()}"  # 每次唯一，从最新block开始
+    JOB_NAME = f"{CHAIN}_{JOB_MODE}_{current_utctime()}"  # 每次唯一，从最新block开始
 
-
-TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{JOB_MODE}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
@@ -61,6 +61,10 @@ def build_rpc_url(cfg: dict) -> str:
     """
     base_url = cfg["base_url"]
     key_env = cfg.get("api_key_env")
+    
+    if isinstance(key_env, list): 
+        key_env = random.choice(key_env)
+    
     # Public RPC
     if not key_env:
         return base_url
@@ -135,6 +139,11 @@ def fetch_and_push():
             # "event": "job_start",
             "chain": CHAIN,
             "job": JOB_NAME,
+            "job_mode" : JOB_MODE,
+            "batch_size": BATCH_SIZE,
+            "range_size": RANGE_SIZE,
+            "log_size" : BATCH_TX_SIZE,
+            "max_workers": MAX_WORKERS,
             "start_block": last_block + 1,
         },
     )
@@ -168,107 +177,36 @@ def fetch_and_push():
             # Kafka Transaction
             # -----------------------------
             producer.begin_transaction()
-
-            batch_tx_total = 0
-            block_count = 0
-
-            for range_start in range(
-                batch_start,
-                batch_end + 1,
-                RANGE_SIZE,
-            ):
-                range_end = min(range_start + RANGE_SIZE - 1, batch_end)
-
-                t0 = time.time()
-                range_logs, rpc_name = fetch_range_logs(
-                    web3_router,
-                    range_start,
-                    range_end,
-                    with_provider=True,
-                )
-                commit_timer.mark_rpc(rpc_name, time.time() - t0)
-
-                if range_logs is None:
-                    raise RuntimeError(
-                        f"range logs {range_start}-{range_end} fetch failed"
-                    )
-
-                range_logs_safe = to_json_safe(range_logs)
-
-                if not isinstance(range_logs_safe, list):
-                    raise RuntimeError(
-                        f"Unexpected range_logs type: {type(range_logs_safe)}"
-                    )
-
-                # -----------------------------------
-                # 按 blockNumber 分组
-                # -----------------------------------
-                logs_by_block = {}
-
-                for log_item in range_logs_safe:
-                    bn = log_item.get("blockNumber")
-                    if bn is None:
-                        continue
-
-                    if isinstance(bn, str):
-                        bn = int(bn, 16)
-
-                    logs_by_block.setdefault(bn, []).append(log_item)
-
-                # -----------------------------------
-                # 逐 block 处理
-                # -----------------------------------
-                for bn, transactions in logs_by_block.items():
-                    total_tx = len(transactions)
-                    batch_tx_total += total_tx
-                    block_count += 1
-
-                    for start_idx in range(0, total_tx, BATCH_TX_SIZE):
-                        batch_tx = transactions[
-                            start_idx : start_idx + BATCH_TX_SIZE
-                        ]
-
-                        for idx, tx in enumerate(batch_tx, start=start_idx):
-                            tx_record = {
-                                "block_height": bn,
-                                "job_name": JOB_NAME,
-                                "run_id": RUN_ID,
-                                "inserted_at": current_utctime(),
-                                "raw": json.dumps(tx),
-                                "tx_index": idx,
-                            }
-
-                            producer.produce(
-                                topic=BLOCKS_TOPIC,
-                                key=f"{bn}-{idx}",
-                                value=blocks_value_serializer(
-                                    tx_record,
-                                    SerializationContext(
-                                        BLOCKS_TOPIC, MessageField.VALUE
-                                    ),
-                                ),
-                                on_delivery=delivery_report,
-                            )
-
-                        producer.poll(0)
+            
+            executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
+            
+            # if JOB_MODE == "backfill":
+            #     executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
+            # else:
+            #     executor = SerialBatchExecutor()
 
 
-                    if bn % 1000 == 0:
-                        log.info(
-                            "block_processed",
-                            extra={
-                                # "event": "block_processed",
-                                "chain": CHAIN,
-                                "job": JOB_NAME,
-                                "block": bn,
-                                "tx": total_tx,
-                            },
-                        )
-                        
-                    BLOCK_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc()
-                    TX_PROCESSED.labels(chain=CHAIN, job=JOB_NAME).inc(total_tx)
-                    TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_NAME).observe(total_tx)
-           
+            ctx = BatchContext(
+                web3_router=web3_router,
+                producer=producer,
+                commit_timer=commit_timer,
+                job_name=JOB_NAME,
+                run_id=RUN_ID,
+                chain=CHAIN,
+                blocks_topic=BLOCKS_TOPIC,
+                batch_tx_size=BATCH_TX_SIZE,
+                blocks_value_serializer=blocks_value_serializer,
+            )
+
+            result = executor.execute(
+                ctx,
+                batch_start=batch_start,
+                batch_end=batch_end,
+                range_size=RANGE_SIZE,
+            )
+
+            block_count = result["block_count"]
+            batch_tx_total = result["tx_total"]
             
             # -----------------------------
             # Commit state
@@ -289,6 +227,7 @@ def fetch_and_push():
                     state_record,
                     SerializationContext(STATE_TOPIC, MessageField.VALUE),
                 ),
+                on_delivery=delivery_report,
             )
 
             producer.poll(0)
@@ -304,18 +243,15 @@ def fetch_and_push():
                     # "event": "batch_committed",
                     "chain": CHAIN,
                     "job": JOB_NAME,
-                    
                     # 与 state topic 100% 一致
                     "range_start": batch_start,
                     "range_end": batch_end,
-
                     # 实际处理情况
                     "blocks": block_count,
                     "tx": batch_tx_total,
-                    
                     # metrics
                     "commit_interval_sec": commit_metrics["commit_interval_sec"],
-                    "rpc_cost_sec": commit_metrics["rpc_cost_sec"],
+                    # "rpc_cost_sec": commit_metrics["rpc_cost_sec"],
                     # "rpc_calls": commit_metrics["rpc_calls"],
                     # "avg_rpc_cost": commit_metrics["avg_rpc_cost"]
                 },

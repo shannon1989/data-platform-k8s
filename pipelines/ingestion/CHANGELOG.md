@@ -17,3 +17,20 @@
 ### Added
 - Add retry for fetch_range_logs function
 - Add web3_router.rotate_provider function
+
+
+## [0.1.9] - 2026-01-18
+### Changed
+- Support a list of key for same RPC provider
+- Batch executor abstration
+
+### Added
+- Add class BatchContext, BatchExecutor and SerialBatchExecutor
+
+
+## [0.2.0] - 2026-01-18
+### Changed
+- Parallel executor abstration
+
+### Added
+- Add ParallelBatchExecutor for fetch_range_logs

@@ -24,31 +24,31 @@ class RpcProvider:
         self.current_weight = max(1, self.current_weight - 1)
         self.cooldown_until = time.time() + seconds
 
-        # log.warning(
-        #     "rpc_penalized",
-        #     extra={
-        #         "event": "rpc_penalized",
-        #         "rpc": self.name,
-        #         "weight_before": before,
-        #         "weight_after": self.current_weight,
-        #         "cooldown_seconds": seconds,
-        #     },
-        # )
+        log.warning(
+            "rpc_penalized",
+            extra={
+                "event": "rpc_penalized",
+                "rpc": self.name,
+                "weight_before": before,
+                "weight_after": self.current_weight,
+                "cooldown_seconds": seconds,
+            },
+        )
 
     def reward(self):
         if self.current_weight < self.base_weight:
             before = self.current_weight
             self.current_weight += 1
 
-            # log.info(
-            #     "rpc_rewarded",
-            #     extra={
-            #         "event": "rpc_rewarded",
-            #         "rpc": self.name,
-            #         "weight_before": before,
-            #         "weight_after": self.current_weight,
-            #     },
-            # )
+            log.info(
+                "rpc_rewarded",
+                extra={
+                    "event": "rpc_rewarded",
+                    "rpc": self.name,
+                    "weight_before": before,
+                    "weight_after": self.current_weight,
+                },
+            )
 
 
 
@@ -216,12 +216,12 @@ class Web3Router:
 
         provider.penalize(cooldown)
 
-        # log.info(
-        #     "rpc_rotated",
-        #     extra={
-        #         "event": "rpc_rotated",
-        #         "chain": self.chain,
-        #         "rpc": rpc_name,
-        #         "cooldown_seconds": cooldown,
-        #     },
-        # )
+        log.info(
+            "rpc_rotated",
+            extra={
+                "event": "rpc_rotated",
+                "chain": self.chain,
+                "rpc": rpc_name,
+                "cooldown_seconds": cooldown,
+            },
+        )

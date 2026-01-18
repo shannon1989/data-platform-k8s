@@ -22,30 +22,6 @@ def to_json_safe(obj):
 # -----------------------------
 # Web3 initialization with router
 # -----------------------------
-def fetch_block_logs(web3_router, block_number, with_provider: bool = False):
-    """
-    Fetch logs for a single block.
-
-    Returns:
-        - with_provider=False (default):
-            block_logs
-        - with_provider=True:
-            (block_logs, rpc_name)
-    """
-
-    if with_provider:
-        return web3_router.call_with_provider(
-            lambda w3: w3.eth.get_logs(
-                {"fromBlock": block_number, "toBlock": block_number}
-            )
-        )
-
-    return web3_router.call(
-        lambda w3: w3.eth.get_logs(
-            {"fromBlock": block_number, "toBlock": block_number}
-        )
-    )
-
 def fetch_range_logs(
     web3_router,
     start_block,

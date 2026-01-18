@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: base-logs-ingestion
+  name: base-logs-ingestion-backfill
   namespace: airflow
   labels:
     app: logs-ingestion
@@ -27,9 +27,9 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.1.8
+          image: evm-kafka-ingestion:0.2.0
           imagePullPolicy: IfNotPresent
-          command: ["python", "blockchain_realtime_logs.py"]
+          command: ["python", "web3_backfill_logs.py"]
 
           # -----------------------------
           # Ingest runtime variables
@@ -37,6 +37,21 @@ spec:
           env:
             - name: CHAIN
               value: "base"
+
+            - name: JOB_MODE
+              value: "backfill"
+          # -----------------------------
+          # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
+          # -----------------------------
+            - name: MAX_WORKERS
+              value: "5"
+
+            - name: BATCH_SIZE
+              value: "10"
+            
+            - name: RANGE_SIZE
+              value: "2"
+
             - name: RESUME_FROM_LAST
               value: "true"
           # -----------------------------
@@ -68,11 +83,11 @@ spec:
           # -----------------------------
           resources:
             requests:
-              cpu: "200m"
+              cpu: "400m"
               memory: "512Mi"
             limits:
-              cpu: "1000m"
-              memory: "1Gi"
+              cpu: "2000m"
+              memory: "2Gi"
 
           # livenessProbe:
           #   httpGet:

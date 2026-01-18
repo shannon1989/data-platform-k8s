@@ -15,107 +15,153 @@ data:
             {
               "name": "infura",
               "base_url": "https://bsc-mainnet.infura.io/v3",
-              "api_key_env": "INFURA_API_KEY",
-              "weight": 5,
+              "api_key_env": ["INFURA_API_KEY_A", "INFURA_API_KEY_B", "INFURA_API_KEY_C", "INFURA_API_KEY_D", "INFURA_API_KEY_E", "INFURA_API_KEY_F"],
+              "weight": 10,
               "enabled": true
             },
             {
               "name": "blockpi",
               "base_url": "https://bsc.blockpi.network/v1/rpc",
               "api_key_env": "BLOCKPI_BSC_API_KEY",
-              "weight": 10,
+              "weight": 8,
               "enabled": true
+            },
+            {
+              "name": "nownodes",
+              "base_url": "https://bsc.nownodes.io",
+              "api_key_env": "NOWNODES_KEY_A",
+              "weight": 8,
+              "enabled": true,
+              "comments": "valid for one month only"
+            },
+            {
+              "name": "onfinality",
+              "base_url": "https://bnb.api.onfinality.io",
+              "api_key_env": "ONFINALITY_KEY_A",
+              "weight": 8,
+              "enabled": true,
+              "comments": "400,000 API daily limit"
             },
             {
               "name": "alchemy",
               "base_url": "https://bnb-mainnet.g.alchemy.com/v2",
-              "api_key_env": "ALCHEMY_API_KEY",
-              "weight": 5,
-              "enabled": true
-            },
-            {
-              "name": "dwellir",
-              "base_url": "https://api-bsc-mainnet-full.n.dwellir.com",
-              "api_key_env": "DWELLIR_API_KEY",
-              "weight": 5,
+              "api_key_env": ["ALCHEMY_API_KEY_A", "ALCHEMY_API_KEY_B"],
+              "weight": 8,
               "enabled": false
             },
             {
               "name": "getblock",
               "base_url": "https://go.getblock.asia",
               "api_key_env": "GETBLOCK_BSC_API_KEY",
-              "weight": 5,
+              "weight": 10,
               "enabled": false
             },
             {
               "name": "chainstack",
               "base_url": "https://bsc-mainnet.core.chainstack.com",
               "api_key_env": "CHAINSTACK_BSC_API_KEY",
-              "weight": 5,
+              "weight": 10,
               "enabled": false
             },
             {
               "name": "ankr",
               "base_url": "https://rpc.ankr.com/bsc",
-              "api_key_env": "ANKR_API_KEY",
-              "weight": 5,
+              "api_key_env": ["ANKR_API_KEY_A", "ANKR_API_KEY_B", "ANKR_API_KEY_C"],
+              "weight": 8,
               "enabled": true
-            }
-          ]
-        },
-
-        "eth": {
-          "chain_id": 1,
-          "network": "mainnet",
-          "type": "evm",
-          "providers": [
+            },
             {
-              "name": "infura",
-              "base_url": "https://mainnet.infura.io/v3",
-              "api_key_env": "INFURA_API_KEY",
+              "name": "drpc",
+              "base_url": "https://lb.drpc.live/bsc",
+              "api_key_env": "DRPC_API_KEY_A",
               "weight": 5,
               "enabled": true
             },
             {
-              "name": "blockpi",
-              "base_url": "https://ethereum.blockpi.network/v1/rpc",
-              "api_key_env": "BLOCKPI_ETH_API_KEY",
-              "weight": 10,
-              "enabled": true
-            },
-            {
-              "name": "alchemy",
-              "base_url": "https://eth-mainnet.g.alchemy.com/v2",
-              "api_key_env": "ALCHEMY_API_KEY",
+              "name": "etherspot",
+              "base_url": "https://rpc.etherspot.io/v2",
+              "api_key_env": "ETHERSPOT_KEY_A",
               "weight": 5,
               "enabled": true
             },
             {
-              "name": "dwellir",
-              "base_url": "https://api-ethereum-mainnet.n.dwellir.com",
-              "api_key_env": "DWELLIR_API_KEY",
-              "weight": 5,
-              "enabled": false
-            },
-            {
-              "name": "getblock",
-              "base_url": "https://go.getblock.asia",
-              "api_key_env": "GETBLOCK_ETH_API_KEY",
-              "weight": 5,
+              "name": "public-nodies",
+              "base_url": "https://binance-smart-chain-public.nodies.app",
+              "weight": 2,
               "enabled": true
             },
             {
-              "name": "chainstack",
-              "base_url": "https://ethereum-mainnet.core.chainstack.com",
-              "api_key_env": "CHAINSTACK_ETH_API_KEY",
-              "weight": 5,
+              "name": "public-nownodes",
+              "base_url": "https://public-bsc.nownodes.io",
+              "weight": 2,
               "enabled": true
             },
             {
-              "name": "ankr",
-              "base_url": "https://rpc.ankr.com/eth",
-              "api_key_env": "ANKR_API_KEY",
-              "weight": 5,
+              "name": "public-omniatech",
+              "base_url": "https://endpoints.omniatech.io/v1/bsc/mainnet/public",
+              "weight": 2,
+              "enabled": false,
+              "comments": "does not support getLogs"
+            },
+            {
+              "name": "public-subquery",
+              "base_url": "https://bnb.rpc.subquery.network/public",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-tatum",
+              "base_url": "https://bsc-mainnet.gateway.tatum.io",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-thirdweb",
+              "base_url": "https://binance.rpc.thirdweb.com",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-llamarpc",
+              "base_url": "https://bsc.llamarpc.com",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-merkle",
+              "base_url": "https://bsc.merkle.io",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-nodereal",
+              "base_url": "https://binance.nodereal.io",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-fastnode",
+              "base_url": "https://public-bsc-mainnet.fastnode.io",
+              "weight": 2,
+              "enabled": true
+            },            
+            {
+              "name": "public-blxrbdn",
+              "base_url": "https://bsc.rpc.blxrbdn.com",
+              "weight": 2,
+              "enabled": true
+            },
+            {
+              "name": "public-publicnode",
+              "base_url": "https://bsc-rpc.publicnode.com",
+              "weight": 2,
+              "enabled": false,
+              "comments": "does not support getLogs"
+            },
+            {
+              "name": "public-1rpc",
+              "base_url": "https://1rpc.io/bnb",
+              "weight": 2,
               "enabled": true
             }
           ]
@@ -126,31 +172,53 @@ data:
           "network": "mainnet",
           "type": "evm",
           "providers": [
-            {"name": "infura-A","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_A","weight": 8,"enabled": true},
-            {"name": "infura-B","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_B","weight": 8,"enabled": true},
-            {"name": "infura-C","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 8,"enabled": true},
-            {"name": "infura-D","base_url": "https://base-mainnet.infura.io/v3","api_key_env": "INFURA_API_KEY_C","weight": 8,"enabled": true},
+            {
+              "name": "infura",
+              "base_url": "https://base-mainnet.infura.io/v3",
+              "api_key_env": ["INFURA_API_KEY_A", "INFURA_API_KEY_B", "INFURA_API_KEY_C", "INFURA_API_KEY_D", "INFURA_API_KEY_E", "INFURA_API_KEY_F"],
+              "weight": 8,
+              "enabled": true
+            },
+            {
+              "name": "blockpi",
+              "base_url": "https://base.blockpi.network/v1/rpc",
+              "api_key_env": ["BLOCKPI_BASE_KEY_A","BLOCKPI_BASE_KEY_B","BLOCKPI_BASE_KEY_C","BLOCKPI_BASE_KEY_D"],
+              "weight": 1,
+              "enabled": false
+            },
+            {
+              "name": "alchemy",
+              "base_url": "https://base-mainnet.g.alchemy.com/v2",
+              "api_key_env": ["ALCHEMY_API_KEY_A", "ALCHEMY_API_KEY_B"],
+              "weight": 10,
+              "enabled": true
+            },
+            {
+              "name": "getblock",
+              "base_url": "https://go.getblock.asia",
+              "api_key_env": ["GETBLOCK_BASE_KEY_A","GETBLOCK_BASE_KEY_B"],
+              "weight": 10,
+              "enabled": true
+            },
+            { 
+              "name": "chainstack",
+              "base_url": "https://base-mainnet.core.chainstack.com",
+              "api_key_env": ["CHAINSTACK_BASE_KEY_A","CHAINSTACK_BASE_KEY_B"],
+              "weight": 9,
+              "enabled": true
+            },
+            {
+              "name": "ankr",
+              "base_url": "https://rpc.ankr.com/base",
+              "api_key_env": ["ANKR_API_KEY_A", "ANKR_API_KEY_B", "ANKR_API_KEY_C"],
+              "weight": 9,
+              "enabled": true
+            },
 
-            {"name": "blockpi-A","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_A","weight": 1,"enabled": false},
-            {"name": "blockpi-B","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_B","weight": 1,"enabled": false},
-            {"name": "blockpi-C","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_C","weight": 1,"enabled": false},
-            {"name": "blockpi-D","base_url": "https://base.blockpi.network/v1/rpc","api_key_env": "BLOCKPI_BASE_KEY_D","weight": 1,"enabled": false},
-
-            {"name": "alchemy-A","base_url": "https://base-mainnet.g.alchemy.com/v2","api_key_env": "ALCHEMY_API_KEY_A","weight": 10,"enabled": true},
-            {"name": "alchemy-B","base_url": "https://base-mainnet.g.alchemy.com/v2","api_key_env": "ALCHEMY_API_KEY_B","weight": 10,"enabled": true},
-
-            {"name": "getblock-A","base_url": "https://go.getblock.asia","api_key_env": "GETBLOCK_BASE_KEY_A","weight": 10,"enabled": true},
-            {"name": "getblock-B","base_url": "https://go.getblock.asia","api_key_env": "GETBLOCK_BASE_KEY_B","weight": 10,"enabled": true},
-
-            {"name": "chainstack-A","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_KEY_A","weight": 9,"enabled": true},
-            {"name": "chainstack-B","base_url": "https://base-mainnet.core.chainstack.com","api_key_env": "CHAINSTACK_BASE_KEY_B","weight": 9,"enabled": true},
+            {"name": "coinbase","base_url": "https://api.developer.coinbase.com/rpc/v1/base","api_key_env": "COINBASE_API_KEY_A","weight": 10,"enabled": true},
+            {"name": "drpc","base_url": "https://lb.drpc.live/base","api_key_env": "DRPC_API_KEY_A","weight": 10,"enabled": false},
             
-            {"name": "ankr-A","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_A","weight": 9,"enabled": true},
-            {"name": "ankr-B","base_url": "https://rpc.ankr.com/base","api_key_env": "ANKR_API_KEY_B","weight": 9,"enabled": true},
-
-            {"name": "coinbase-A","base_url": "https://api.developer.coinbase.com/rpc/v1/base","api_key_env": "COINBASE_API_KEY_A","weight": 10,"enabled": true},
-            {"name": "drpc-A","base_url": "https://lb.drpc.live/base","api_key_env": "DRPC_API_KEY_A","weight": 10,"enabled": false},
-            {"name": "public-publicnode.com","base_url": "https://base-rpc.publicnode.com","weight": 10,"enabled": false},
+            {"name": "public-publicnode.com","base_url": "https://bsc-mainnet.gateway.tatum.io","weight": 10,"enabled": false},
             {"name": "public-1rpc.io","base_url": "https://1rpc.io/base","weight": 10,"enabled": true}
             
           ]

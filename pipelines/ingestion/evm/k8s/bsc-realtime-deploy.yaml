@@ -6,11 +6,17 @@ metadata:
   labels:
     app: logs-ingestion
     chain: bsc
+  annotations:
+    reloader.stakater.com/auto: "true"
+    
 spec:
   replicas: 1
+  # strategy:
+  #   type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）
   selector:
     matchLabels:
-      app: bsc-logs-ingestion
+      app: logs-ingestion
+      chain: bsc
   template:
     metadata:
       labels:
@@ -21,23 +27,34 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.1.0
+          image: evm-kafka-ingestion:0.2.0
           imagePullPolicy: IfNotPresent
-          command: ["python", "bsc_realtime_logs.py"]
+          command: ["python", "web3_logs_ingestion.py"]
 
           # -----------------------------
           # Ingest runtime variables
           # -----------------------------
           env:
-            - name: BATCH_SIZE
-              value: "5"
-            - name: BATCH_TX_SIZE
-              value: "10"
-            - name: POLL_INTERVAL
-              value: "0.1" # Avoid RPC error "Max retries exceeded"
             - name: CHAIN
               value: "bsc"
-              
+
+            - name: JOB_MODE
+              value: "backfill"
+            # -----------------------------
+            # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
+            # RANGE_SIZE <= 2 for some public nodes
+            # -----------------------------
+            - name: MAX_WORKERS
+              value: "8"
+
+            - name: BATCH_SIZE
+              value: "16"
+            
+            - name: RANGE_SIZE
+              value: "2"
+
+            - name: RESUME_FROM_LAST
+              value: "true"
           # -----------------------------
           # Metrics endpoint
           # -----------------------------
@@ -67,11 +84,11 @@ spec:
           # -----------------------------
           resources:
             requests:
-              cpu: "200m"
+              cpu: "400m"
               memory: "512Mi"
             limits:
-              cpu: "1000m"
-              memory: "1Gi"
+              cpu: "2000m"
+              memory: "2Gi"
 
           # livenessProbe:
           #   httpGet:

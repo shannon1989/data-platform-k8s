@@ -32,8 +32,8 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
         "max.in.flight.requests.per.connection": 5,
         
         # Throughput tuning
-        "linger.ms": 20,
-        "batch.size": 262144,          # 256KB
+        "linger.ms": 50,
+        "batch.size": 524288,          # 512KB
         "compression.type": "lz4",
         
         # Timeouts(avoid Erroneous state)

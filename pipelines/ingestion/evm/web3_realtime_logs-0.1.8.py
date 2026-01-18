@@ -3,6 +3,7 @@
 # -----------------------------
 import os
 import json
+import random
 import uuid
 import time
 from confluent_kafka.serialization import SerializationContext, MessageField
@@ -61,6 +62,10 @@ def build_rpc_url(cfg: dict) -> str:
     """
     base_url = cfg["base_url"]
     key_env = cfg.get("api_key_env")
+    
+    if isinstance(key_env, list): 
+        key_env = random.choice(key_env)
+    
     # Public RPC
     if not key_env:
         return base_url

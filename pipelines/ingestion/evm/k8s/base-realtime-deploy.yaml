@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: base-logs-ingestion
+  name: base-logs-ingestion-realtime
   namespace: airflow
   labels:
     app: logs-ingestion
@@ -38,7 +38,7 @@ spec:
             - name: CHAIN
               value: "base"
             - name: RESUME_FROM_LAST
-              value: "true"
+              value: "false"
           # -----------------------------
           # Metrics endpoint
           # -----------------------------
