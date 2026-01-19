@@ -17,7 +17,8 @@ from src.kafka_utils import init_producer, get_serializers, delivery_report
 from src.web3_utils import current_utctime
 from src.rpc_provider import RpcTemporarilyUnavailable
 from src.commit_timer import CommitTimer
-from src.batch_executor import SerialBatchExecutor, BatchContext, ParallelBatchExecutor
+from src.batch_executor import BatchContext, ParallelBatchExecutor
+from src.safe_latest import SafeLatestBlockProvider
 # -----------------------------
 # Environment Variables
 # -----------------------------
@@ -153,16 +154,26 @@ def fetch_and_push():
     while True:
         try:
             # -----------------------------
-            # 获取最新区块
+            # Retrieve validated, monotonic latest block number
             # -----------------------------
-            t0 = time.time()
-            latest_block, rpc_name = web3_router.call_with_provider(lambda w3: w3.eth.block_number)
-            commit_timer.mark_rpc(rpc_name, time.time() - t0)
-            
-            CHAIN_LATEST_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(latest_block)
-            CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
-            CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
+            safe_latest_provider = SafeLatestBlockProvider(
+                chain=CHAIN,
+                job=JOB_NAME,
+                max_reorg_tolerance=5,
+                max_block_jump=200,
+            )
 
+            t0 = time.time()
+            raw_latest_block, rpc_name = web3_router.call_with_provider(lambda w3: w3.eth.block_number)
+            commit_timer.mark_rpc(rpc_name, time.time() - t0)
+
+            latest_block = safe_latest_provider.update(
+                raw_block=raw_latest_block,
+                rpc_name=rpc_name,
+            )
+            # current value - no history, no incremental, overriden
+            CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
+        
             if last_block >= latest_block:
                 time.sleep(POLL_INTERVAL)
                 continue
@@ -173,19 +184,29 @@ def fetch_and_push():
             batch_start = last_block + 1
             batch_end = min(last_block + BATCH_SIZE, latest_block)
 
+            if batch_end < batch_start:
+                log.error(
+                    "invalid_batch_range",
+                    extra={
+                        "batch_start": batch_start,
+                        "batch_end": batch_end,
+                        "latest_block": latest_block,
+                        "last_block": last_block,
+                    },
+                )
+                time.sleep(POLL_INTERVAL)
+                continue
+
             # -----------------------------
             # Kafka Transaction
             # -----------------------------
             producer.begin_transaction()
             
             executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
-            
             # if JOB_MODE == "backfill":
             #     executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
             # else:
             #     executor = SerialBatchExecutor()
-
-
             ctx = BatchContext(
                 web3_router=web3_router,
                 producer=producer,
@@ -257,8 +278,14 @@ def fetch_and_push():
                 },
             )
             
-            CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
+            
             CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
+            CHECKPOINT_LAG_RAW.labels(chain=CHAIN, job=JOB_NAME).set(max(0, raw_latest_block - last_block))
+            
+            commit_interval = commit_metrics.get("commit_interval_sec")
+            if isinstance(commit_interval, (int, float)) and commit_interval >= 0:
+                COMMIT_INTERVAL.labels(chain=CHAIN, job=JOB_NAME).observe(commit_interval) # histogram (time series)
+                COMMIT_INTERVAL_LATEST.labels(chain=CHAIN, job=JOB_NAME).set(commit_interval) # stat
 
         # -------------------------------------------------
         # 🟡 1️⃣ RPC 临时不可用（最轻）

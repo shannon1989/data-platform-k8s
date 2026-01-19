@@ -1,0 +1,68 @@
+{
+  "id": 8,
+  "type": "stat",
+  "title": "Ingestion Lag status",
+  "description": "the gap between current checkpoint and chain head",
+  "gridPos": {
+    "x": 0,
+    "y": 0,
+    "h": 5,
+    "w": 4
+  },
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "yellow",
+            "value": 5
+          },
+          {
+            "color": "orange",
+            "value": 20
+          },
+          {
+            "color": "red",
+            "value": 100
+          }
+        ]
+      },
+      "decimals": 0,
+      "unit": "none"
+    },
+    "overrides": []
+  },
+  "pluginVersion": "12.3.1",
+  "targets": [
+    {
+      "editorMode": "code",
+      "expr": "max(ingestion_checkpoint_lag{chain=~\"$chain\"})",
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "datasource": "Prometheus",
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": ""
+    },
+    "orientation": "auto",
+    "textMode": "value",
+    "wideLayout": true,
+    "colorMode": "value",
+    "graphMode": "none",
+    "justifyMode": "center",
+    "showPercentChange": false,
+    "percentChangeColorMode": "standard"
+  }
+}

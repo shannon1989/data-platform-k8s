@@ -1,0 +1,83 @@
+{
+  "id": 16,
+  "type": "stat",
+  "title": "Commit inteveral seconds",
+  "gridPos": {
+    "x": 0,
+    "y": 5,
+    "h": 5,
+    "w": 4
+  },
+  "fieldConfig": {
+    "defaults": {
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "#6ED0E0",
+            "value": 3
+          },
+          {
+            "color": "#EAB839",
+            "value": 5
+          },
+          {
+            "color": "#EF843C",
+            "value": 8
+          },
+          {
+            "color": "#E24D42",
+            "value": 13
+          },
+          {
+            "color": "#1F78C1",
+            "value": 21
+          },
+          {
+            "color": "#BA43A9",
+            "value": 34
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "pluginVersion": "12.3.1",
+  "targets": [
+    {
+      "editorMode": "code",
+      "expr": "max(\r\n  commit_interval_sec_latest{chain=~\"$chain\"}\r\n)",
+      "legendFormat": "{{chain}}",
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "maxDataPoints": 300,
+  "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+  },
+  "interval": "5s",
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": ""
+    },
+    "orientation": "auto",
+    "textMode": "auto",
+    "wideLayout": true,
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "showPercentChange": false,
+    "percentChangeColorMode": "standard"
+  }
+}

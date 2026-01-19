@@ -39,4 +39,10 @@
 
 ## [0.2.1] - 2026-01-19
 ### Changed
-- Parallel executor abstration
+- Validate latest block from RPC
+- Observibility for commit interval
+- Add histogram and stat view of commit interval in Grafana
+
+### Added
+- Add SafeLatestBlockProvider
+- Add metrics: COMMIT_INTERVAL and COMMIT_INTERVAL_LATEST

@@ -108,7 +108,7 @@ class Web3Router:
             used.add(provider.name)
 
             set_current_rpc(provider.name)
-            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc()
+            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc() # 在原有基础上累加, 只能单调递增, Prometheus 会自动算 rate / increase
 
             w3 = Web3(
                 Web3.HTTPProvider(

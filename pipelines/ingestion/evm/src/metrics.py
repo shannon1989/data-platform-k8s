@@ -5,13 +5,23 @@ from prometheus_client import Counter, Gauge, Histogram
 # -----------------------------
 CHECKPOINT_LAG = Gauge(
     "ingestion_checkpoint_lag",
-    "Block lag between chain head and ingestion checkpoint",
+    "Safe block lag between chain head and ingestion checkpoint",
     ["chain", "job"],
+)
+CHECKPOINT_LAG_RAW = Gauge(
+    "ingestion_checkpoint_lag_raw",
+    "Raw block lag between chain head and ingestion checkpoint",
+    ["chain", "job", "rpc"],
 )
 CHAIN_LATEST_BLOCK = Gauge(
     "chain_latest_block",
-    "Latest block number on chain",
+    "Safe latest block number on chain",
     ["chain", "job"],
+)
+CHAIN_LATEST_BLOCK_RAW = Gauge(
+    "chain_latest_block_raw",
+    "Raw latest block number on chain",
+    ["chain", "job", "rpc"],
 )
 CHECKPOINT_BLOCK = Gauge(
     "ingestion_checkpoint",
@@ -37,8 +47,33 @@ TX_PER_BLOCK = Histogram(
     "ingestion_tx_per_block",
     "Transactions per block",
     ["chain", "job"],
-    buckets=(10, 50, 100, 200, 500, 1000, 2000),
+    buckets=(50, 100, 200, 500, 1000, 2000, 5000, 10000),
 )
+
+COMMIT_INTERVAL = Histogram(
+    "commit_interval_sec",
+    "Time between successful commits",
+    ["chain", "job"],
+    buckets=(1, 2, 3, 5, 8, 13, 21, 34),
+)
+
+COMMIT_INTERVAL_LATEST = Gauge(
+    "commit_interval_sec_latest",
+    "Latest commit interval",
+    ["chain", "job"],
+)
+
+# | bucket | 意义        |
+# | ------ | --------- |
+# | ≤1s    | 极快 / 理想   |
+# | ≤2s    | 正常下限      |
+# | ≤3s    | 正常        |
+# | ≤5s    | 稳定(SLA p95) |
+# | ≤8s    | 稍慢        |
+# | ≤13s   | ⚠️ 明显变慢   |
+# | ≤21s   | 🚨 接近不可接受 |
+# | ≤34s   | 🔥 严重异常   |
+
 
 # -----------------------------
 # RPC

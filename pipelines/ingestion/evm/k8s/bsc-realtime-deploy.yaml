@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.2.0
+          image: evm-kafka-ingestion:0.2.1
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_logs_ingestion.py"]
 
@@ -53,8 +53,6 @@ spec:
             - name: RANGE_SIZE
               value: "5"
 
-            - name: RESUME_FROM_LAST
-              value: "true"
           # -----------------------------
           # Metrics endpoint
           # -----------------------------
