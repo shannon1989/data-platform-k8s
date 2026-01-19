@@ -42,16 +42,16 @@ spec:
               value: "backfill"
             # -----------------------------
             # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
-            # RANGE_SIZE <= 2 for some public nodes
+            # RANGE_SIZE <= 2 for some public nodes (realtime setting: 8-16-2)
             # -----------------------------
             - name: MAX_WORKERS
-              value: "8"
+              value: "6"
 
             - name: BATCH_SIZE
-              value: "16"
+              value: "30"
             
             - name: RANGE_SIZE
-              value: "2"
+              value: "5"
 
             - name: RESUME_FROM_LAST
               value: "true"

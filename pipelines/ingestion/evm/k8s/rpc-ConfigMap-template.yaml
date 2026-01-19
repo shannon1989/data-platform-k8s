@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blockchain-rpc-config
+  namespace: airflow
+data:
+  rpc_providers.json: |
+    {
+      "chains": {
+        "bsc": {
+          "chain_id": 56,
+          "network": "mainnet",
+          "type": "evm",
+          "providers": [
+            {
+              "name": "blockpi",
+              "base_url": "https://bsc.blockpi.network/v1/rpc",
+              "api_key_env": ["BLOCKPI_BSC_KEY_A", "BLOCKPI_BSC_KEY_B"],
+              "weight": 8,
+              "enabled": true
+            },
+            {
+              "name": "alchemy",
+              "base_url": "https://bnb-mainnet.g.alchemy.com/v2",
+              "api_key_env": ["ALCHEMY_API_KEY_A", "ALCHEMY_API_KEY_B"],
+              "weight": 8,
+              "enabled": false
+            }
+          ]
+        },
+
+        "base": {
+          "chain_id": 8453,
+          "network": "mainnet",
+          "type": "evm",
+          "providers": [
+            {
+              "name": "infura",
+              "base_url": "https://base-mainnet.infura.io/v3",
+              "api_key_env": ["INFURA_API_KEY_A", "INFURA_API_KEY_B"],
+              "weight": 8,
+              "enabled": true
+            },        
+            { 
+              "name": "public-publicnode.com",
+              "base_url": "https://bsc-mainnet.gateway.tatum.io",
+              "weight": 10,
+              "enabled": false
+            },
+            {
+              "name": "public-1rpc.io",
+              "base_url": "https://1rpc.io/base",
+              "weight": 10,
+              "enabled": true
+            }
+          ]
+        }
+      }
+    }

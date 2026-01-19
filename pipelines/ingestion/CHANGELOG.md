@@ -34,3 +34,9 @@
 
 ### Added
 - Add ParallelBatchExecutor for fetch_range_logs
+- Add JOB_MODE and remove FROM_LAST_BLOCK env.
+
+
+## [0.2.1] - 2026-01-19
+### Changed
+- Parallel executor abstration

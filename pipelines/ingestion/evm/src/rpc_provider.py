@@ -40,15 +40,15 @@ class RpcProvider:
             before = self.current_weight
             self.current_weight += 1
 
-            log.info(
-                "rpc_rewarded",
-                extra={
-                    "event": "rpc_rewarded",
-                    "rpc": self.name,
-                    "weight_before": before,
-                    "weight_after": self.current_weight,
-                },
-            )
+            # log.info(
+            #     "rpc_rewarded",
+            #     extra={
+            #         "event": "rpc_rewarded",
+            #         "rpc": self.name,
+            #         "weight_before": before,
+            #         "weight_after": self.current_weight,
+            #     },
+            # )
 
 
 
