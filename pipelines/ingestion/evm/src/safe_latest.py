@@ -44,7 +44,7 @@ class SafeLatestBlockProvider:
             # 1️⃣ Severe regression → reject
             if raw_block < self._last_good_block - self.max_reorg_tolerance:
                 log.warning(
-                    "rpc_latest_block_regression",
+                    "⚠️rpc_latest_block_regression",
                     extra={
                         "event": "rpc_latest_block_regression",
                         "chain": self.chain,
@@ -59,7 +59,7 @@ class SafeLatestBlockProvider:
             # 2️⃣ Abnormal forward jump → cap
             elif raw_block - self._last_good_block > self.max_block_jump:
                 log.warning(
-                    "rpc_latest_block_jump",
+                    "⚠️rpc_latest_block_jump",
                     extra={
                         "event": "rpc_latest_block_jump",
                         "chain": self.chain,

@@ -69,7 +69,26 @@
 
 ## [0.2.5] - 2026-01-20
 ### Changed
+- Remove random.choice(key_env) from RpcPool.from_config
+- Use key_env list fro RpcProvider and add slot for each key of a provider
 
+## [0.2.6] - 2026-01-20
+### Changed
+- Print key_env in logs
+- Return logs, RpcContext for Web3Router._call_internal method
+
+## [0.2.7] - 2026-01-20
+### Changed
+- Bug fix for RpcKeySlot
+- 同一个 key，在请求“执行期间”不可再次被 acquire
+- Add emoji for log.warning, log.error, job_start, kafka_commit and range_fetch_done.
+
+## [0.2.8] - 2026-01-20
+### Changed
+- Update logic: key will be used only once with the same batch
+- No duplicate key/rpc within the same batch
+- Add BatchKeyManager class
+- Add RPC_KEY_BUSY metrics
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned

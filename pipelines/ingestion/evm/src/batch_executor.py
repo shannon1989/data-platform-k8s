@@ -46,129 +46,19 @@ class BatchExecutor:
         raise NotImplementedError
 
 
-class SerialBatchExecutor(BatchExecutor):
-    def execute(
-        self,
-        ctx: BatchContext,
-        batch_start: int,
-        batch_end: int,
-        range_size: int,
-    ):
-        batch_tx_total = 0
-        block_count = 0
-
-        for range_start in range(
-            batch_start,
-            batch_end + 1,
-            range_size,
-        ):
-            range_end = min(range_start + range_size - 1, batch_end)
-
-            t0 = time.time()
-            range_logs, rpc_name = fetch_range_logs(
-                ctx.web3_router,
-                range_start,
-                range_end,
-                with_provider=True,
-            )
-            ctx.commit_timer.mark_rpc(rpc_name, time.time() - t0)
-
-            if range_logs is None:
-                raise RuntimeError(
-                    f"range logs {range_start}-{range_end} fetch failed"
-                )
-
-            range_logs_safe = to_json_safe(range_logs)
-
-            if not isinstance(range_logs_safe, list):
-                raise RuntimeError(
-                    f"Unexpected range_logs type: {type(range_logs_safe)}"
-                )
-
-            # -----------------------------
-            # group by blockNumber
-            # -----------------------------
-            logs_by_block = {}
-
-            for log_item in range_logs_safe:
-                bn = log_item.get("blockNumber")
-                if bn is None:
-                    continue
-
-                if isinstance(bn, str):
-                    bn = int(bn, 16)
-
-                logs_by_block.setdefault(bn, []).append(log_item)
-
-            # -----------------------------
-            # per block produce
-            # -----------------------------
-            for bn, transactions in logs_by_block.items():
-                total_tx = len(transactions)
-                batch_tx_total += total_tx
-                block_count += 1
-
-                for start_idx in range(0, total_tx, ctx.batch_tx_size):
-                    batch_tx = transactions[
-                        start_idx : start_idx + ctx.batch_tx_size
-                    ]
-
-                    for idx, tx in enumerate(batch_tx, start=start_idx):
-                        tx_record = {
-                            "block_height": bn,
-                            "job_name": ctx.job_name,
-                            "run_id": ctx.run_id,
-                            "inserted_at": current_utctime(),
-                            "raw": json.dumps(tx),
-                            "tx_index": idx,
-                        }
-
-                        ctx.producer.produce(
-                            topic=ctx.blocks_topic,
-                            key=f"{bn}-{idx}",
-                            value=ctx.blocks_value_serializer(
-                                tx_record,
-                                SerializationContext(
-                                    ctx.blocks_topic, MessageField.VALUE
-                                ),
-                            ),
-                            on_delivery=delivery_report,
-                        )
-
-                    ctx.producer.poll(0)
-
-                if bn % 1000 == 0:
-                    log.info(
-                        "block_processed",
-                        extra={
-                            "chain": ctx.chain,
-                            "job": ctx.job_name,
-                            "block": bn,
-                            "tx": total_tx,
-                        },
-                    )
-
-                BLOCK_PROCESSED.labels(chain=ctx.chain, job=ctx.job_name).inc()
-                TX_PROCESSED.labels(chain=ctx.chain, job=ctx.job_name).inc(total_tx)
-                TX_PER_BLOCK.labels(chain=ctx.chain, job=ctx.job_name).observe(total_tx)
-
-        return {
-            "block_count": block_count,
-            "tx_total": batch_tx_total,
-        }
-
-
 def fetch_range_with_metrics(web3_router, rs, re):
     task_start = time.perf_counter()
     thread = threading.current_thread()
 
     rpc_start = time.perf_counter()
-    logs, rpc = fetch_range_logs(
+    # provider return:  {"rpc": "alchemy","key_env": "ALCHEMY_API_KEY_3"}
+    logs, provider_ctx = fetch_range_logs(
         web3_router,
         rs,
         re,
         with_provider=True,
     )
+
     rpc_cost_sec = time.perf_counter() - rpc_start
     
     task_cost_sec = time.perf_counter() - task_start
@@ -177,7 +67,8 @@ def fetch_range_with_metrics(web3_router, rs, re):
         "range_start": rs,
         "range_end": re,
         "logs": logs,
-        "rpc": rpc,
+        "rpc": provider_ctx.rpc,
+        "key_env": provider_ctx.key_env,
         "rpc_cost_sec": rpc_cost_sec,
         "task_cost_sec" : task_cost_sec,
         "worker_thread": thread.name,
@@ -232,20 +123,21 @@ class ParallelBatchExecutor(BatchExecutor):
                     
                     task_cost = result.get("task_cost_sec")
                     
-                    log.info(
-                        "range_fetch_done",
-                        extra={
-                            "chain": ctx.chain,
-                            "job": ctx.job_name,
-                            "range_start": result["range_start"],
-                            "range_end": result["range_end"],
-                            "worker": result["worker_thread"],
-                            # "worker_thread_id": result["worker_thread_id"],
-                            "rpc": result["rpc"],
-                            "cost_sec": round(task_cost, 2) if task_cost is not None else None,
-                            "logs": len(result["logs"]) if result["logs"] else 0,
-                        },
-                    )
+                    # log.info(
+                    #     "range_fetch_done",
+                    #     extra={
+                    #         "chain": ctx.chain,
+                    #         "job": ctx.job_name,
+                    #         "range_start": result["range_start"],
+                    #         "range_end": result["range_end"],
+                    #         "worker": result["worker_thread"],
+                    #         # "worker_thread_id": result["worker_thread_id"],
+                    #         "rpc": result["rpc"],
+                    #         "key_env": result["key_env"],
+                    #         "cost_sec": round(task_cost, 2) if task_cost is not None else None,
+                    #         "logs": len(result["logs"]) if result["logs"] else 0,
+                    #     },
+                    # )
                     rpc_cost_sec = round(task_cost, 2) if task_cost is not None else 0
                     RPC_LATENCY.labels(chain=ctx.chain, rpc=result["rpc"]).observe(rpc_cost_sec) # histogram (time series)
                     RPC_LATENCY_LATEST.labels(chain=ctx.chain, rpc=result["rpc"]).set(rpc_cost_sec) # stat
@@ -260,7 +152,7 @@ class ParallelBatchExecutor(BatchExecutor):
 
                 except Exception as e:
                     log.exception(
-                        "range_fetch_failed",
+                        "❌range_fetch_failed",
                         extra={
                             "chain": ctx.chain,
                             "job": ctx.job_name,
@@ -330,7 +222,7 @@ class ParallelBatchExecutor(BatchExecutor):
                 TX_PER_BLOCK.labels(chain=ctx.chain, job=ctx.job_name).observe(total_tx)
 
         # log.info(
-        #     "parallel_batch_fetch_summary",
+        #     "batch_fetch_summary",
         #     extra={
         #         "chain": ctx.chain,
         #         "job": ctx.job_name,

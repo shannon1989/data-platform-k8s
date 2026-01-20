@@ -89,7 +89,7 @@ def fetch_and_push():
     )
 
     log.info(
-        "job_start",
+        "▶️job_start",
         extra={
             # "event": "job_start",
             "chain": CHAIN,
@@ -118,12 +118,12 @@ def fetch_and_push():
             )
 
             t0 = time.time()
-            raw_latest_block, rpc_name = web3_router.call_with_provider(lambda w3: w3.eth.block_number)
-            commit_timer.mark_rpc(rpc_name, time.time() - t0)
+            raw_latest_block, provider_ctx = web3_router.call_with_provider(lambda w3: w3.eth.block_number)
+            commit_timer.mark_rpc(provider_ctx.rpc, time.time() - t0)
 
             latest_block = safe_latest_provider.update(
                 raw_block=raw_latest_block,
-                rpc_name=rpc_name,
+                rpc_name=provider_ctx.rpc,
             )
             # current value - no history, no incremental, overriden
             CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_NAME).set(last_block)
@@ -139,8 +139,8 @@ def fetch_and_push():
             batch_end = min(last_block + BATCH_SIZE, latest_block)
 
             if batch_end < batch_start:
-                log.error(
-                    "invalid_batch_range",
+                log.warning(
+                    "⚠️ invalid_batch_range",
                     extra={
                         "batch_start": batch_start,
                         "batch_end": batch_end,
@@ -170,16 +170,20 @@ def fetch_and_push():
                 blocks_value_serializer=blocks_value_serializer,
             )
 
-            result = executor.execute(
-                ctx,
-                batch_start=batch_start,
-                batch_end=batch_end,
-                range_size=RANGE_SIZE,
-            )
+            web3_router.begin_batch()
+            try:
+                result = executor.execute(
+                    ctx,
+                    batch_start=batch_start,
+                    batch_end=batch_end,
+                    range_size=RANGE_SIZE,
+                )
 
-            block_count = result["block_count"]
-            batch_tx_total = result["tx_total"]
-            
+                block_count = result["block_count"]
+                batch_tx_total = result["tx_total"]
+            finally:
+                web3_router.end_batch()
+                
             # -----------------------------
             # Commit state
             # -----------------------------
@@ -210,7 +214,7 @@ def fetch_and_push():
             commit_metrics = commit_timer.commit_cost()
             
             log.info(
-                "batch_committed",
+                "✅ batch_committed",
                 extra={
                     # "event": "batch_committed",
                     "chain": CHAIN,
@@ -243,7 +247,7 @@ def fetch_and_push():
         # -------------------------------------------------
         except RpcTemporarilyUnavailable:
             log.warning(
-                "rpc_temporarily_unavailable",
+                "⚠️ rpc_temporarily_unavailable",
                 extra={
                     # "event": "rpc_temporarily_unavailable",
                     "chain": CHAIN,
@@ -261,7 +265,7 @@ def fetch_and_push():
         # -------------------------------------------------
         except KafkaException as e:
             log.exception(
-                "kafka_transaction_failed",
+                "❌ kafka_transaction_failed",
                 extra={
                     # "event": "kafka_transaction_failed",
                     "chain": CHAIN,
@@ -301,7 +305,7 @@ def fetch_and_push():
             # 🚨 Runtime failure
             # -----------------------------
             log.exception(
-                "fatal_runtime_error",
+                "🔥 fatal_runtime_error",
                 extra={
                     # "event": "fatal_runtime_error",
                     "chain": CHAIN,

@@ -65,6 +65,12 @@ RPC_ERRORS = Counter(
     ["chain", "rpc", "key_env"]
 )
 
+RPC_KEY_BUSY = Counter(
+    "rpc_key_busy_total",
+    "RPC key busy by provider, 表示哪个 provider 的 key 不够用",
+    ["chain", "rpc"]
+)
+
 RPC_LATENCY = Histogram(
     "rpc_latency_sec",
     "RPC latencies by provider",

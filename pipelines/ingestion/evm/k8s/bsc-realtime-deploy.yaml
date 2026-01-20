@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.2.4
+          image: evm-kafka-ingestion:0.2.8
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_logs_ingestion.py"]
 

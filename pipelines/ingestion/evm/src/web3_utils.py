@@ -26,7 +26,7 @@ def fetch_range_logs(
     web3_router,
     start_block,
     end_block,
-    with_provider: bool = False,
+    with_provider: bool = True,
     *,
     max_retry: int = 10,
     retry_sleep: float = 0.5,
@@ -47,16 +47,16 @@ def fetch_range_logs(
         RuntimeError if empty logs after max_retry
     """
 
-    last_rpc = None
-
+    last_provider = None
+    
     for attempt in range(1, max_retry + 1):
         if with_provider:
-            logs, rpc_name = web3_router.call_with_provider(
+            logs, provider_ctx = web3_router.call_with_provider(
                 lambda w3: w3.eth.get_logs(
                     {"fromBlock": start_block, "toBlock": end_block}
                 )
             )
-            last_rpc = rpc_name
+            last_provider = provider_ctx
         else:
             logs = web3_router.call(
                 lambda w3: w3.eth.get_logs(
@@ -66,18 +66,19 @@ def fetch_range_logs(
 
         # ✅ 正常返回（非空）
         if logs:
-            return (logs, last_rpc) if with_provider else logs
+            return (logs, last_provider) if with_provider else logs
 
         # ⚠️ 空 logs → retry
         log.warning(
-            "empty_range_logs_retry",
+            "⚠️empty_range_logs_retry",
             extra={
                 # "event": "empty_range_logs_retry",
                 "range_start": start_block,
                 "range_end": end_block,
                 "attempt": attempt,
                 "max_retry": max_retry,
-                "rpc": last_rpc,
+                "rpc": last_provider.rpc,
+                "key_env": last_provider.key_env,
             },
         )
 

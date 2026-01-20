@@ -9,7 +9,7 @@ from src.logging import log
 def delivery_report(err, msg):
     if err:
         log.error(
-            "kafka_delivery_failed",
+            "🔥kafka_delivery_failed",
             extra={
                 # "event": "kafka_delivery_failed",
                 "topic": msg.topic(),

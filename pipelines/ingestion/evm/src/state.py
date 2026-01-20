@@ -75,7 +75,7 @@ def resolve_start_block(
     checkpoint = last_state.get("checkpoint")
     if checkpoint is None:
         log.warning(
-            "state_without_checkpoint",
+            "⚠️state_without_checkpoint",
             extra={"job": job_name, "state": last_state},
         )
         return latest - 1
