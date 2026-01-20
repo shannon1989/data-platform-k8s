@@ -2,7 +2,6 @@ import sys
 import logging
 import json
 from datetime import datetime, timezone
-from src.rpc_context import get_current_rpc
 
 # -----------------------------
 # JSON formatter (Loki / OpenSearch)
@@ -16,7 +15,6 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
-            # "rpc": get_current_rpc(),
         }
         for key, value in record.__dict__.items():
             if key.startswith("_") or key in (

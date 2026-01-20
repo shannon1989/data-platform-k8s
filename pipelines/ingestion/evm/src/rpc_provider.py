@@ -1,7 +1,6 @@
-import time, random
+import time, random, os
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
-from src.rpc_context import set_current_rpc, get_current_rpc
 from src.metrics import RPC_REQUESTS, RPC_ERRORS
 from src.logging import log
 
@@ -9,9 +8,10 @@ from src.logging import log
 # RPC Provider config
 # -----------------------------
 class RpcProvider:
-    def __init__(self, name, url, weight):
+    def __init__(self, name, base_url, weight, key_env=None):
         self.name = name
-        self.url = url
+        self.base_url = base_url 
+        self.key_env = key_env
         self.base_weight = weight
         self.current_weight = weight
         self.cooldown_until = 0
@@ -27,14 +27,14 @@ class RpcProvider:
         log.warning(
             "rpc_penalized",
             extra={
-                "event": "rpc_penalized",
+                # "event": "rpc_penalized",
                 "rpc": self.name,
                 "weight_before": before,
                 "weight_after": self.current_weight,
                 "cooldown_seconds": seconds,
             },
         )
-
+        
     def reward(self):
         if self.current_weight < self.base_weight:
             before = self.current_weight
@@ -49,8 +49,23 @@ class RpcProvider:
             #         "weight_after": self.current_weight,
             #     },
             # )
+    
+    def build_url(self):
+        """
+        Build final RPC URL for THIS request
+        """
+        if not self.key_env:
+            return self.base_url # public RPC without key_env
 
+        api_key = os.getenv(self.key_env)
+        if not api_key:
+            raise RuntimeError(
+                f"Missing env var for RPC provider {self.name}: {self.key_env}"
+            )
 
+        return f"{self.base_url}/{api_key}"
+    
+    
 
 class RpcPool:
     def __init__(self, providers):
@@ -65,12 +80,54 @@ class RpcPool:
         random.shuffle(candidates)
         return candidates
     
-    # ⭐ 新增
     def get_provider(self, name: str):
         for p in self.providers:
             if p.name == name:
                 return p
         return None
+
+    # ⭐ 工厂方法
+    @classmethod
+    def from_config(cls, rpc_configs: dict, chain: str) -> "RpcPool":
+        chain_cfg = rpc_configs.get("chains", {}).get(chain)
+        if not chain_cfg:
+            raise RuntimeError(f"Chain config not found: {chain}")
+
+        providers = []
+
+        for cfg in chain_cfg.get("providers", []):
+            if not cfg.get("enabled", True):
+                continue
+
+            key_env = cfg.get("api_key_env")
+            if isinstance(key_env, list):
+                key_env = random.choice(key_env)
+
+            providers.append(
+                RpcProvider(
+                    name=cfg["name"],
+                    base_url=cfg["base_url"],
+                    weight=int(cfg.get("weight", 1)),
+                    key_env=key_env,
+                )
+            )
+
+        if not providers:
+            raise RuntimeError(f"No RPC providers enabled for chain: {chain}")
+
+        # ⭐ 初始化日志
+        for p in providers:
+            log.info(
+                "rpc_enabled",
+                extra={
+                    "chain": chain,
+                    "rpc": p.name,
+                    "key_env": p.key_env,
+                    "weight": p.base_weight,
+                },
+            )
+        return cls(providers)
+
 
 class RpcTemporarilyUnavailable(Exception):
     pass
@@ -91,7 +148,8 @@ class Web3Router:
         self.penalize_seconds = penalize_seconds
         self.max_backoff = max_backoff
 
-        self.consecutive_failures = 0  # ⭐ 关键状态
+        self.consecutive_failures = 0
+        self.last_provider: RpcProvider | None = None
 
     # -------------------------------------------------
     # 🔒 Internal unified call
@@ -107,12 +165,17 @@ class Web3Router:
                 continue
             used.add(provider.name)
 
-            set_current_rpc(provider.name)
-            RPC_REQUESTS.labels(chain=self.chain, rpc=provider.name).inc() # 在原有基础上累加, 只能单调递增, Prometheus 会自动算 rate / increase
+            self.last_provider = provider
+            
+            RPC_REQUESTS.labels(
+                chain=self.chain,
+                rpc=provider.name,
+                key_env=provider.key_env or "public",
+            ).inc() # 在原有基础上累加, 只能单调递增, Prometheus 会自动算 rate / increase
 
             w3 = Web3(
                 Web3.HTTPProvider(
-                    provider.url,
+                    provider.build_url(),
                     request_kwargs={"timeout": self.timeout},
                 )
             )
@@ -129,7 +192,6 @@ class Web3Router:
                 # log.info(
                 #     "rpc_call_success",
                 #     extra={
-                #         "event": "rpc_call_success",
                 #         "chain": self.chain,
                 #         "rpc": provider.name,
                 #         "current_weight": provider.current_weight,
@@ -152,7 +214,7 @@ class Web3Router:
                         "error": str(e)[:200],
                     },
                 )
-                RPC_ERRORS.labels(chain=self.chain, rpc=provider.name).inc()
+                RPC_ERRORS.labels(chain=self.chain, rpc=provider.name, key_env=provider.key_env or "public").inc()
                 provider.penalize(self.penalize_seconds)
                 last_exc = e
                 continue
@@ -204,11 +266,7 @@ class Web3Router:
         Args:
             seconds: override penalize_seconds if provided
         """
-        rpc_name = get_current_rpc()
-        if not rpc_name:
-            return
-
-        provider = self.rpc_pool.get_provider(rpc_name)
+        provider = self.last_provider
         if not provider:
             return
 
@@ -221,7 +279,8 @@ class Web3Router:
             extra={
                 "event": "rpc_rotated",
                 "chain": self.chain,
-                "rpc": rpc_name,
+                "rpc": provider.name,
+                "key_env": provider.key_env,
                 "cooldown_seconds": cooldown,
             },
         )

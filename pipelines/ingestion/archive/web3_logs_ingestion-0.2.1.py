@@ -3,6 +3,7 @@
 # -----------------------------
 import os
 import json
+import random
 import uuid
 import time
 from confluent_kafka.serialization import SerializationContext, MessageField
@@ -10,7 +11,7 @@ from prometheus_client import start_http_server
 from confluent_kafka import KafkaException
 from src.metrics import *
 from src.logging import log
-from src.rpc_provider import RpcPool, Web3Router
+from src.rpc_provider import RpcProvider, RpcPool, Web3Router
 from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
 from src.web3_utils import current_utctime
@@ -18,7 +19,6 @@ from src.rpc_provider import RpcTemporarilyUnavailable
 from src.commit_timer import CommitTimer
 from src.batch_executor import BatchContext, ParallelBatchExecutor
 from src.safe_latest import SafeLatestBlockProvider
-
 # -----------------------------
 # Environment Variables
 # -----------------------------
@@ -31,36 +31,85 @@ BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction 
 CHAIN = os.getenv("CHAIN", "base").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
 
 # -----------------------------
-# Behavior Control, Job Name & Kafka IDs
+# Behavior Control
 # -----------------------------
 JOB_MODE = os.getenv("JOB_MODE", "realtime").lower() # backfill or realtime, realtime by default
 
+# -----------------------------
+# Job Name & Kafka IDs
+# -----------------------------
 if JOB_MODE == "backfill":
     JOB_NAME = f"{CHAIN}_{JOB_MODE}"        # 固定名，Kafka checkpoint 能被复用
 else:
     JOB_NAME = f"{CHAIN}_{JOB_MODE}_{current_utctime()}"  # 每次唯一，从最新block开始
 
-# -----------------------------
-# Config
-# -----------------------------
 TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{JOB_MODE}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
 STATE_TOPIC = f"blockchain.state.{CHAIN}"
-RPC_CONFIG_PATH = "/etc/ingestion/rpc_providers.json" 
 
 # -----------------------------
 # load RPC Pool
 # -----------------------------
+RPC_CONFIG_PATH = "/etc/ingestion/rpc_providers.json"
 with open(RPC_CONFIG_PATH) as f:
     rpc_configs = json.load(f)
 
-rpc_pool = RpcPool.from_config(
-    rpc_configs=rpc_configs,
-    chain=CHAIN,
-)
+def build_rpc_url(cfg: dict) -> str:
+    """
+    Build final RPC URL from provider config.
+    """
+    base_url = cfg["base_url"]
+    key_env = cfg.get("api_key_env")
+    
+    if isinstance(key_env, list): 
+        key_env = random.choice(key_env)
+    
+    # Public RPC
+    if not key_env:
+        return base_url
 
+    api_key = os.getenv(key_env)
+    if not api_key:
+        raise RuntimeError(
+            f"Missing env var for RPC provider "
+            f"{cfg['name']}: {key_env}"
+        )
+    
+    return f"{base_url}/{api_key}"
+
+def build_rpc_pool(rpc_configs: dict, chain: str) -> "RpcPool":
+    chain_cfg = rpc_configs.get("chains", {}).get(chain)
+    if not chain_cfg:
+        raise RuntimeError(f"Chain config not found: {chain}")
+
+    providers = []
+
+    for cfg in chain_cfg.get("providers", []):
+        if not cfg.get("enabled", True):
+            continue
+
+        # key_env = cfg.get("api_key_env")
+        # if isinstance(key_env, list): 
+        #     key_env = random.choice(key_env)
+        
+        url = build_rpc_url(cfg)
+
+        providers.append(
+            RpcProvider(
+                name=cfg['name'],
+                url=url,
+                weight=int(cfg.get("weight", 1)),
+            )
+        )
+
+    if not providers:
+        raise RuntimeError(f"No RPC providers enabled for chain: {chain}")
+
+    return RpcPool(providers)
+
+rpc_pool = build_rpc_pool(rpc_configs, CHAIN)
 web3_router = Web3Router(
     rpc_pool=rpc_pool,
     chain=CHAIN,
@@ -74,7 +123,8 @@ web3_router = Web3Router(
 blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
 
 # -----------------------------
-# Kafka State + Exactly-once, batched splitting of logs
+# Main function
+# - Kafka State + Exactly-once, batched splitting of logs
 # -----------------------------
 def fetch_and_push():
     global producer
@@ -157,7 +207,10 @@ def fetch_and_push():
             producer.begin_transaction()
             
             executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
-
+            # if JOB_MODE == "backfill":
+            #     executor = ParallelBatchExecutor(max_workers=MAX_WORKERS)
+            # else:
+            #     executor = SerialBatchExecutor()
             ctx = BatchContext(
                 web3_router=web3_router,
                 producer=producer,

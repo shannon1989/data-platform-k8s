@@ -48,7 +48,14 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
         # Socket stability
         "socket.keepalive.enable": True,
     })
-    log.info("🔧 Initializing Kafka transactions...")
+    
+    log.info(
+        "Kafka_initializing...",
+        extra={
+            "bootstrap_servers": KAFKA_BROKER,
+            "transactional_id": TRANSACTIONAL_ID,
+        },
+    )
     producer.init_transactions()
     return producer
 

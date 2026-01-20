@@ -11,7 +11,7 @@ CHECKPOINT_LAG = Gauge(
 CHECKPOINT_LAG_RAW = Gauge(
     "ingestion_checkpoint_lag_raw",
     "Raw block lag between chain head and ingestion checkpoint",
-    ["chain", "job", "rpc"],
+    ["chain", "job"],
 )
 CHAIN_LATEST_BLOCK = Gauge(
     "chain_latest_block",
@@ -50,6 +50,43 @@ TX_PER_BLOCK = Histogram(
     buckets=(50, 100, 200, 500, 1000, 2000, 5000, 10000),
 )
 
+
+# -----------------------------
+# RPC
+# -----------------------------
+RPC_REQUESTS = Counter(
+    "rpc_requests_total",
+    "RPC requests by provider",
+    ["chain", "rpc", "key_env"]
+)
+RPC_ERRORS = Counter(
+    "rpc_errors_total",
+    "RPC errors by provider",
+    ["chain", "rpc", "key_env"]
+)
+
+RPC_LATENCY = Histogram(
+    "rpc_latency_sec",
+    "RPC latencies by provider",
+    ["chain", "rpc"],
+    buckets=(1, 2, 3, 5, 8, 13, 21, 34),
+)
+
+RPC_LATENCY_LATEST = Gauge(
+    "rpc_latency_sec_latest",
+    "Latest RPC latencies by provider",
+    ["chain", "rpc"],
+)
+
+# -----------------------------
+# Kafka
+# -----------------------------
+KAFKA_TX_FAILURE = Counter(
+                "kafka_transaction_failed_total",
+                "Kafka transaction failures",
+                ["chain", "job"],
+            )
+
 COMMIT_INTERVAL = Histogram(
     "commit_interval_sec",
     "Time between successful commits",
@@ -62,38 +99,3 @@ COMMIT_INTERVAL_LATEST = Gauge(
     "Latest commit interval",
     ["chain", "job"],
 )
-
-# | bucket | 意义        |
-# | ------ | --------- |
-# | ≤1s    | 极快 / 理想   |
-# | ≤2s    | 正常下限      |
-# | ≤3s    | 正常        |
-# | ≤5s    | 稳定(SLA p95) |
-# | ≤8s    | 稍慢        |
-# | ≤13s   | ⚠️ 明显变慢   |
-# | ≤21s   | 🚨 接近不可接受 |
-# | ≤34s   | 🔥 严重异常   |
-
-
-# -----------------------------
-# RPC
-# -----------------------------
-RPC_REQUESTS = Counter(
-    "rpc_requests_total",
-    "RPC requests by provider",
-    ["chain", "rpc"]
-)
-RPC_ERRORS = Counter(
-    "rpc_errors_total",
-    "RPC errors by provider",
-    ["chain", "rpc"]
-)
-
-# -----------------------------
-# Kafka
-# -----------------------------
-KAFKA_TX_FAILURE = Counter(
-                "kafka_transaction_failed_total",
-                "Kafka transaction failures",
-                ["chain", "job"],
-            )

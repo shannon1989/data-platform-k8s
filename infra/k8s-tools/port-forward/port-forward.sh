@@ -31,7 +31,7 @@ port_forward() {
 
 # Monitoring (9090-9093)
 port_forward prometheus prometheus svc/prometheus-kube-prometheus-prometheus 9090:9090
-port_forward grafana prometheus svc/prometheus-grafana 9091:80
+port_forward grafana prometheus svc/prometheus-grafana 3000:80
 port_forward kubernetes-dashboard kubernetes-dashboard svc/kubernetes-dashboard 9092:9090
 port_forward headlamp kube-system svc/kube-system 9093:4466
 

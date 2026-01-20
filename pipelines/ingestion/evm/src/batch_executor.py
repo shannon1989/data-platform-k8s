@@ -246,6 +246,9 @@ class ParallelBatchExecutor(BatchExecutor):
                             "logs": len(result["logs"]) if result["logs"] else 0,
                         },
                     )
+                    rpc_cost_sec = round(task_cost, 2) if task_cost is not None else 0
+                    RPC_LATENCY.labels(chain=ctx.chain, rpc=result["rpc"]).observe(rpc_cost_sec) # histogram (time series)
+                    RPC_LATENCY_LATEST.labels(chain=ctx.chain, rpc=result["rpc"]).set(rpc_cost_sec) # stat
                     
                     results.append(
                         (

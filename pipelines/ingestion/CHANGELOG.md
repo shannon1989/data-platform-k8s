@@ -42,7 +42,46 @@
 - Validate latest block from RPC
 - Observibility for commit interval
 - Add histogram and stat view of commit interval in Grafana
+- Add monitor in RPC key_env level
 
 ### Added
 - Add SafeLatestBlockProvider
 - Add metrics: COMMIT_INTERVAL and COMMIT_INTERVAL_LATEST
+
+## [0.2.2] - 2026-01-19
+### Changed
+- Add monitor in RPC key_env level
+
+### Added
+- Add build_url inside RpcProvider to receive the key_env variables
+- Move build_rpc_pool from main program to RpcPool class
+
+## [0.2.3] - 2026-01-19
+### Changed
+- Move rpc_context.py package to rpc_provider.py
+- Group key into public and private, display rpc requests usage. (disply by key_env)
+
+## [0.2.4] - 2026-01-20
+### Changed
+- Add monitor metrics for RPC latency of each provider
+- New metrics: RPC_LATENCY(Histogram), RPC_LATENCY_LATEST(Gauge)
+
+
+## [0.2.5] - 2026-01-20
+### Changed
+
+
+## [x.x.x] - 2026-Jan/Feb/Mar (plan)
+### planned
+- Output logs with rpc key_env
+- Resolve RPC with extreming long latency
+- Add Python Queue for Kafka backpressure.
+- Add proxy router for RPC.
+- Blockchain logs data model in Iceberg
+- SparkOperator for structured streaming
+- Lakehouse layer design (partition table - bronze/silver/gold)
+- Distributed query engine - Trino deployment
+- Airflow orchestration for logs
+- Blockchain logs data deep analysis (batch and realtime)
+- Bring Flink for realtime analysis.
+- Add blocks/Tx/Receipts and orchestrated through Airflow
