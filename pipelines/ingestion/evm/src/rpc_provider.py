@@ -2,7 +2,7 @@ import time, random, os, threading
 from typing import NamedTuple
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
-from src.metrics import RPC_REQUESTS, RPC_ERRORS, RPC_KEY_BUSY
+from src.metrics import RPC_REQUESTS, RPC_ERRORS, RPC_KEY_BUSY, ACTIVE_RPC_CONNECTIONS
 from src.logging import log
 
 
@@ -310,13 +310,13 @@ class Web3Router:
                 url, slot = provider.acquire_key(batch_mgr=self.batch_key_mgr)
             except RpcKeyUnavailable:
                 # “资源忙”，不是失败
-                log.info(
-                    "⏳ rpc_key_busy",
-                    extra={
-                        "chain": self.chain,
-                        "rpc": provider.name,
-                    },
-                )
+                # log.info(
+                #     "⏳ rpc_key_busy",
+                #     extra={
+                #         "chain": self.chain,
+                #         "rpc": provider.name,
+                #     },
+                # )
                 RPC_KEY_BUSY.labels(chain=self.chain,rpc=provider.name).inc()
 
                 continue  # 🚀 直接换下一个 provider            
@@ -328,6 +328,11 @@ class Web3Router:
                 rpc=provider.name,
                 key_env=key_env_label,
             ).inc() # 在原有基础上累加, 只能单调递增, Prometheus 会自动算 rate / increase
+
+            ACTIVE_RPC_CONNECTIONS.labels(
+                chain=self.chain,
+                rpc=provider.name,
+            ).inc()
 
             w3 = Web3(
                 Web3.HTTPProvider(
@@ -384,7 +389,13 @@ class Web3Router:
                 last_exc = e
                 continue
 
+            # RPC success, RPC timeout, SSLEOF, any Exception → failover
             finally:
+                ACTIVE_RPC_CONNECTIONS.labels(
+                    chain=self.chain,
+                    rpc=provider.name,
+                ).dec()
+                
                 if slot:
                     slot.release()
 

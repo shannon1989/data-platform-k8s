@@ -90,8 +90,27 @@
 - Add BatchKeyManager class
 - Add RPC_KEY_BUSY metrics
 
+
+## [0.2.9] - 2026-01-20
+### Changed
+- RPC active connection add active_rpc_connections
+
+## [0.3.0] - 2026-01-21
+### Changed
+- Calculate COMMIT_COST_LATEST metric in Grafana
+- Empty block log checking (eg: 76158470)
+| 指标                      | 含义                      |
+| ----------------------- | ----------------------- |
+| `commit_interval_sec`   | 两次 commit 之间的间隔         |
+| `commit_cost_sec`       | commit_transaction 本身耗时 |
+| `commit_overhead_ratio` | commit 占 batch 的比例      |
+
+
+
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned
+- Adaptive range size for different RPC.
+- Adaptive key_concurrency_per_batch.
 - Output logs with rpc key_env
 - Resolve RPC with extreming long latency
 - Add Python Queue for Kafka backpressure.

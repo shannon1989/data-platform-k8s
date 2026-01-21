@@ -71,6 +71,12 @@ RPC_KEY_BUSY = Counter(
     ["chain", "rpc"]
 )
 
+ACTIVE_RPC_CONNECTIONS = Gauge(
+    "active_rpc_connections",
+    "Number of in-flight RPC HTTPS requests",
+    ["chain", "rpc"]
+)
+
 RPC_LATENCY = Histogram(
     "rpc_latency_sec",
     "RPC latencies by provider",

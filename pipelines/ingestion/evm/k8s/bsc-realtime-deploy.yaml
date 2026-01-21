@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: evm-kafka-ingestion:0.2.8
+          image: evm-kafka-ingestion:0.3.0
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_logs_ingestion.py"]
 
@@ -45,13 +45,13 @@ spec:
             # RANGE_SIZE <= 2 for some public nodes (realtime setting: 8-16-2)
             # -----------------------------
             - name: MAX_WORKERS
-              value: "6"
+              value: "10"
 
             - name: BATCH_SIZE
-              value: "30"
+              value: "60"
             
             - name: RANGE_SIZE
-              value: "5"
+              value: "6"
 
           # -----------------------------
           # Metrics endpoint
@@ -82,11 +82,11 @@ spec:
           # -----------------------------
           resources:
             requests:
-              cpu: "400m"
-              memory: "512Mi"
+              cpu: "200m"
+              memory: "256Mi"
             limits:
-              cpu: "2000m"
-              memory: "2Gi"
+              cpu: "1200m"
+              memory: "512Mi"
 
           # livenessProbe:
           #   httpGet:

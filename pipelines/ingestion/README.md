@@ -112,6 +112,10 @@ docker build -t eth-backfill:0.1.4 .
   局部重复 > 全局风险
   清晰脚本 > 抽象体系
 
+Clash ubuntu server install:
+```bash
+sudo wget https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/mihomo-linux-amd64-v2-alpha-1e1434d.gz
+```
 
 Check previous log:
 kubectl logs -n airflow bsc-logs-ingestion-b548dcf69-ftxzh --previous

@@ -217,8 +217,8 @@ def fetch_and_push():
                 "✅ batch_committed",
                 extra={
                     # "event": "batch_committed",
-                    "chain": CHAIN,
-                    "job": JOB_NAME,
+                    # "chain": CHAIN,
+                    # "job": JOB_NAME,
                     # 与 state topic 100% 一致
                     "range_start": batch_start,
                     "range_end": batch_end,
@@ -226,22 +226,18 @@ def fetch_and_push():
                     "blocks": block_count,
                     "tx": batch_tx_total,
                     # metrics
-                    "commit_interval_sec": commit_metrics["commit_interval_sec"],
-                    # "rpc_cost_sec": commit_metrics["rpc_cost_sec"],
-                    # "rpc_calls": commit_metrics["rpc_calls"],
-                    # "avg_rpc_cost": commit_metrics["avg_rpc_cost"]
+                    "commit_interval_sec": commit_metrics["commit_interval_sec"]
                 },
             )
-            
             
             CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_NAME).set(max(0, latest_block - last_block))
             CHECKPOINT_LAG_RAW.labels(chain=CHAIN, job=JOB_NAME).set(max(0, raw_latest_block - last_block))
             
-            commit_interval = commit_metrics.get("commit_interval_sec")
-            if isinstance(commit_interval, (int, float)) and commit_interval >= 0:
-                COMMIT_INTERVAL.labels(chain=CHAIN, job=JOB_NAME).observe(commit_interval) # histogram (time series)
-                COMMIT_INTERVAL_LATEST.labels(chain=CHAIN, job=JOB_NAME).set(commit_interval) # stat
-
+            commit_interval_sec = commit_metrics.get("commit_interval_sec")
+            if isinstance(commit_interval_sec, (int, float)) and commit_interval_sec >= 0:
+                COMMIT_INTERVAL.labels(chain=CHAIN, job=JOB_NAME).observe(commit_interval_sec) # histogram (time series)
+                COMMIT_INTERVAL_LATEST.labels(chain=CHAIN, job=JOB_NAME).set(commit_interval_sec) # stat
+                
         # -------------------------------------------------
         # 🟡 1️⃣ RPC 临时不可用（最轻）
         # -------------------------------------------------

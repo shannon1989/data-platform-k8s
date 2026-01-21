@@ -123,21 +123,21 @@ class ParallelBatchExecutor(BatchExecutor):
                     
                     task_cost = result.get("task_cost_sec")
                     
-                    # log.info(
-                    #     "range_fetch_done",
-                    #     extra={
-                    #         "chain": ctx.chain,
-                    #         "job": ctx.job_name,
-                    #         "range_start": result["range_start"],
-                    #         "range_end": result["range_end"],
-                    #         "worker": result["worker_thread"],
-                    #         # "worker_thread_id": result["worker_thread_id"],
-                    #         "rpc": result["rpc"],
-                    #         "key_env": result["key_env"],
-                    #         "cost_sec": round(task_cost, 2) if task_cost is not None else None,
-                    #         "logs": len(result["logs"]) if result["logs"] else 0,
-                    #     },
-                    # )
+                    log.info(
+                        "range_fetch_done",
+                        extra={
+                            # "chain": ctx.chain,
+                            # "job": ctx.job_name,
+                            "range_start": result["range_start"],
+                            "range_end": result["range_end"],
+                            # "worker": result["worker_thread"],
+                            # "worker_thread_id": result["worker_thread_id"],
+                            "rpc": result["rpc"],
+                            "key_env": result["key_env"],
+                            "cost_sec": round(task_cost, 2) if task_cost is not None else None,
+                            "logs": len(result["logs"]) if result["logs"] else 0,
+                        },
+                    )
                     rpc_cost_sec = round(task_cost, 2) if task_cost is not None else 0
                     RPC_LATENCY.labels(chain=ctx.chain, rpc=result["rpc"]).observe(rpc_cost_sec) # histogram (time series)
                     RPC_LATENCY_LATEST.labels(chain=ctx.chain, rpc=result["rpc"]).set(rpc_cost_sec) # stat
