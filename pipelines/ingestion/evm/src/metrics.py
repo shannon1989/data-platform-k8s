@@ -103,7 +103,7 @@ COMMIT_INTERVAL = Histogram(
     "commit_interval_sec",
     "Time between successful commits",
     ["chain", "job"],
-    buckets=(1, 2, 3, 5, 8, 13, 21, 34),
+    buckets=(1, 2, 3, 5, 8, 13, 21, 34, 55, 89),
 )
 
 COMMIT_INTERVAL_LATEST = Gauge(

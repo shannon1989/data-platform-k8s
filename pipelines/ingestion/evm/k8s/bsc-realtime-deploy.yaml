@@ -45,13 +45,13 @@ spec:
             # RANGE_SIZE <= 2 for some public nodes (realtime setting: 8-16-2)
             # -----------------------------
             - name: MAX_WORKERS
-              value: "10"
+              value: "8"
 
             - name: BATCH_SIZE
-              value: "60"
+              value: "40"
             
             - name: RANGE_SIZE
-              value: "6"
+              value: "5"
 
           # -----------------------------
           # Metrics endpoint
@@ -82,10 +82,10 @@ spec:
           # -----------------------------
           resources:
             requests:
-              cpu: "200m"
+              cpu: "500m"
               memory: "256Mi"
             limits:
-              cpu: "1200m"
+              cpu: "1000m"
               memory: "512Mi"
 
           # livenessProbe:

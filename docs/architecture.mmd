@@ -1,0 +1,43 @@
+flowchart LR
+    subgraph RPC_Layer["RPC Provider Layer"]
+        RP1["RPC Provider A<br/>Key Pool"]
+        RP2["RPC Provider B<br/>Key Pool"]
+        RP3["RPC Provider C<br/>Key Pool"]
+    end
+
+    subgraph Window["Sliding Window Controller"]
+        SW["Sliding Window<br/>Rate Limiter"]
+        KM["Key Availability Tracker"]
+        TM["Timeout Monitor<br/>(10s)"]
+    end
+
+    subgraph Fetcher["RPC Fetcher"]
+        WR["Web3 Router"]
+    end
+
+    subgraph Kafka["Kafka Cluster"]
+        T1["raw_blocks / raw_logs"]
+        T2["reorg_events"]
+        T3["commit_state"]
+    end
+
+    subgraph Coordinator["Commit Coordinator"]
+        CC["Commit Coordinator"]
+        ST["Checkpoint / Offset State"]
+    end
+
+    RP1 --> SW
+    RP2 --> SW
+    RP3 --> SW
+
+    SW --> KM
+    SW --> TM
+    KM --> WR
+    TM --> WR
+
+    WR --> T1
+    CC --> T3
+    CC --> T2
+
+    T1 --> CC
+    ST --> CC

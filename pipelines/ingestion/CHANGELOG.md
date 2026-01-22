@@ -95,7 +95,7 @@
 ### Changed
 - RPC active connection add active_rpc_connections
 
-## [0.3.0] - 2026-01-21
+## [0.2.9] - 2026-01-21
 ### Changed
 - Calculate COMMIT_COST_LATEST metric in Grafana
 - Empty block log checking (eg: 76158470)
@@ -104,6 +104,59 @@
 | `commit_interval_sec`   | 两次 commit 之间的间隔         |
 | `commit_cost_sec`       | commit_transaction 本身耗时 |
 | `commit_overhead_ratio` | commit 占 batch 的比例      |
+
+
+## [0.3.0] - 2026-01-21
+### Changed
+- Architecture upgrade
+```TXT
+┌──────────────────────┐
+│ RPC Fetch Pool       │
+│ (N workers)          │
+│                      │
+│ - acquire key        │
+│ - call RPC           │
+│ - timeout / failover │
+│ - output (range,logs)│
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ In-Memory Queue      │  ← 解耦点（关键）
+│ (asyncio.Queue)      │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Kafka Writer Pool    │
+│ (1~2 threads)        │
+│                      │
+│ - begin txn          │
+│ - produce logs       │
+│ - report success     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ CommitCoordinator    │
+│                      │
+│ - track range state  │
+│ - write checkpoint   │
+│ - commit txn         │
+└──────────────────────┘
+```
+```TXT
+Flink vs Sliding Window Executor
+| Flink                  | Sliding Window Executor     |
+| ---------------------- | --------------------------- |
+| Source                 | RPC Fetch Worker            |
+| Operator               | range processor             |
+| State                  | range_done_map / checkpoint |
+| Barrier                | range 完成事件               |
+| Sink                   | Kafka writer                |
+| Checkpoint Coordinator | CommitCoordinator           |
+```
+
 
 
 
