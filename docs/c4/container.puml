@@ -1,0 +1,38 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+System_Boundary(platform, "On-chain Data Platform") {
+
+    Container(fetcher, "RPC Fetcher",
+        "Python",
+        "Fetches blocks / logs using sliding window RPC control")
+
+    Container(kafka, "Kafka",
+        "Kafka",
+        "Immutable event log")
+
+    Container(cc, "Commit Coordinator",
+        "Python",
+        "Orders data, detects reorg, commits state")
+
+    Container(spark, "Stream Processor",
+        "Spark / Flink",
+        "Transforms raw blockchain data")
+
+    Container(ch, "OLAP Storage",
+        "ClickHouse",
+        "Stores committed analytical data")
+}
+
+System_Ext(chain, "Blockchain RPC Providers", "Ethereum / Sui")
+System_Ext(bi, "BI / Analytics", "Metabase")
+
+Rel(fetcher, chain, "RPC calls")
+Rel(fetcher, kafka, "Produces raw_blocks / raw_logs")
+Rel(kafka, cc, "Consumes raw data")
+Rel(cc, kafka, "Produces commit_state / reorg_events")
+Rel(kafka, spark, "Streams committed data")
+Rel(spark, ch, "Writes OLAP tables")
+Rel(bi, ch, "Queries")
+
+@enduml

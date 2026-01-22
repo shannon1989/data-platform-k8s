@@ -1,0 +1,18 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "Data Engineer / Analyst", "Consumes on-chain analytics data")
+
+System_Ext(chain, "Blockchain Network", "Ethereum / Sui RPC")
+
+System(system, "On-chain Data Platform",
+  "RPC Sliding Window + Kafka + Commit Coordinator")
+
+System_Ext(bi, "BI / Analytics",
+  "Metabase / SQL / Dashboards")
+
+Rel(user, bi, "Queries")
+Rel(bi, system, "Reads committed data")
+Rel(system, chain, "Fetches blocks / logs")
+
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(fetcher, "RPC Fetcher", "Python")
+
+Component(scheduler, "Task Scheduler",
+  "Dispatches block / range tasks")
+
+Component(window, "Sliding Window Controller",
+  "Rate limits by provider + key")
+
+Component(keypool, "RPC Key Pool",
+  "Tracks key availability")
+
+Component(timeout, "Timeout Monitor",
+  "Fails fast on >10s latency")
+
+Component(router, "Web3 Router",
+  "Routes calls to providers")
+
+Component(producer, "Kafka Producer",
+  "Emits raw blockchain data")
+
+Rel(scheduler, window, "Requests slot")
+Rel(window, keypool, "Checks quota")
+Rel(window, timeout, "Registers inflight")
+Rel(keypool, router, "Provides key")
+Rel(timeout, router, "Cancels / retries")
+Rel(router, producer, "Sends data")
+
+@enduml

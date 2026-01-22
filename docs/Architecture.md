@@ -24,6 +24,25 @@
 
 ## 2. High-Level Architecture
 
+### system context
+```mermaid
+flowchart LR
+    User["Data Engineer / Analyst"]
+    Chain["Blockchain Network<br/>(Ethereum / Sui)"]
+
+    System["On-chain Data Platform<br/>(RPC Sliding Window + Kafka)"]
+
+    BI["BI / Analytics<br/>(Metabase / SQL)"]
+
+    User --> BI
+    BI --> System
+    System --> BI
+    System --> Chain
+```
+
+
+
+
 ```
 ┌──────────────────────────────────────┐
 │            Orchestration             │

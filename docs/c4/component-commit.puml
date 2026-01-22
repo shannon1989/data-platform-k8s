@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(cc, "Commit Coordinator", "Python")
+
+Component(consumer, "Kafka Consumer",
+  "Consumes raw blocks / logs")
+
+Component(validator, "Parent Hash Validator",
+  "Checks chain continuity")
+
+Component(reorg, "Reorg Detector",
+  "Detects chain reorgs")
+
+Component(fsm, "Commit State Machine",
+  "Advances or rolls back commit point")
+
+Component(store, "State Store",
+  "Persists checkpoints / offsets")
+
+Rel(consumer, validator, "Validates order")
+Rel(validator, fsm, "On success")
+Rel(validator, reorg, "On mismatch")
+Rel(reorg, fsm, "Triggers rollback")
+Rel(fsm, store, "Persists state")
+
+@enduml
