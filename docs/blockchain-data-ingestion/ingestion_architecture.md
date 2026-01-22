@@ -1,3 +1,4 @@
+```mermaid
 flowchart LR
     subgraph RPC_Layer["RPC Provider Layer"]
         RP1["RPC Provider A<br/>Key Pool"]
@@ -41,3 +42,4 @@ flowchart LR
 
     T1 --> CC
     ST --> CC
+```

@@ -3,25 +3,15 @@
 
 System_Boundary(platform, "On-chain Data Platform") {
 
-    Container(fetcher, "RPC Fetcher",
-        "Python",
-        "Fetches blocks / logs using sliding window RPC control")
+    Container(fetcher, "RPC Fetcher","Python","Fetches blocks / logs using sliding window RPC control")
 
-    Container(kafka, "Kafka",
-        "Kafka",
-        "Immutable event log")
+    Container(kafka, "Kafka","Kafka","Immutable event log")
 
-    Container(cc, "Commit Coordinator",
-        "Python",
-        "Orders data, detects reorg, commits state")
+    Container(cc, "Commit Coordinator","Python","Orders data, detects reorg, commits state")
 
-    Container(spark, "Stream Processor",
-        "Spark / Flink",
-        "Transforms raw blockchain data")
+    Container(spark, "Stream Processor","Spark / Flink","Transforms raw blockchain data")
 
-    Container(ch, "OLAP Storage",
-        "ClickHouse",
-        "Stores committed analytical data")
+    Container(ch, "OLAP Storage","ClickHouse","Stores committed analytical data")
 }
 
 System_Ext(chain, "Blockchain RPC Providers", "Ethereum / Sui")

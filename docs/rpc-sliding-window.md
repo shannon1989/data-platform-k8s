@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
     participant Worker
     participant Window as SlidingWindow
@@ -20,3 +21,4 @@ sequenceDiagram
     else rate limited
         Window-->>Worker: reject / retry
     end
+```
