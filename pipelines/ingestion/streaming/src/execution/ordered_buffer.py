@@ -1,4 +1,8 @@
-from ../control/range_record import RangeRecord
+from src.control.range_record import RangeRecord
+
+# . = 当前 package
+# .. = 上一级 package
+# 永远用点，不用斜杠
 
 # OrderedResultBuffer（保证顺序提交）- ingestion 的灵魂组件
 # 介于 RPC 与 Kafka 之间
