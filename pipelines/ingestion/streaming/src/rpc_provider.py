@@ -32,6 +32,7 @@ class RpcTrace:
 class RpcTaskMeta:
     task_id: int
     submit_ts: float
+    extra: dict
 
 @dataclass
 class RpcErrorResult:
@@ -285,6 +286,23 @@ class Web3AsyncRouter:
         raise RpcTemporarilyUnavailable()
 
 
+    async def get_latest_block(self) -> int:
+        result, rpc, key_env, trace = await self.call_once(
+            "eth_blockNumber",
+            []
+        )
+        log.info(
+            "📦get_latest_block",
+            extra={
+                "rpc": rpc,
+                "key_env": key_env,
+                "method": "eth_blockNumber",
+                "latest_block": int(result, 16)
+            },
+        )
+        return int(result, 16)
+
+
 _task_seq = itertools.count(1)
 _STOP = object()
 
@@ -306,19 +324,26 @@ class AsyncRpcScheduler:
             task = asyncio.create_task(self._dispatcher_loop(wid))
             self.workers.append(task)
 
-    async def submit(self, method: str, params: list):
+    async def submit(
+        self,
+        method: str, 
+        params: list,
+        *,
+        meta: dict | None = None,
+    ):
         if self._closed:
             raise RuntimeError("Scheduler already closed")
 
         loop = asyncio.get_running_loop()
         fut = loop.create_future()
 
-        meta = RpcTaskMeta(
+        task_meta = RpcTaskMeta(
             task_id=next(_task_seq),
             submit_ts=time.time(),
+            extra=meta or {},   # 🔥 业务 meta
         )
 
-        await self.queue.put((method, params, fut, meta))
+        await self.queue.put((method, params, fut, task_meta))
 
         RPC_SUBMITTED.inc()
         RPC_QUEUE_SIZE.set(self.queue.qsize())
@@ -347,17 +372,17 @@ class AsyncRpcScheduler:
             RPC_QUEUE_WAIT.observe(queue_wait_ms)
             RPC_QUEUE_SIZE.set(self.queue.qsize())
             
-            log.info(
-                "rpc_dispatch",
-                extra={
-                    "task_id": meta.task_id,
-                    "worker": wid,
-                    "method": method,
-                    "queue_wait_ms": round(
-                        (dispatch_ts - meta.submit_ts) * 1000, 2
-                    ),
-                },
-            )
+            # log.info(
+            #     "rpc_dispatch",
+            #     extra={
+            #         "task_id": meta.task_id,
+            #         # "worker": wid,
+            #         "method": method,
+            #         "queue_wait_ms": round(
+            #             (dispatch_ts - meta.submit_ts) * 1000, 2
+            #         ),
+            #     },
+            # )
 
             # 🔥 不 await RPC
             asyncio.create_task(
@@ -373,14 +398,14 @@ class AsyncRpcScheduler:
             RPC_STARTED.inc()
             RPC_INFLIGHT.inc()
             
-            log.info(
-                "rpc_call_start",
-                extra={
-                    "task_id": meta.task_id,
-                    "worker": wid,
-                    "method": method,
-                },
-            )
+            # log.info(
+            #     "rpc_call_start",
+            #     extra={
+            #         "task_id": meta.task_id,
+            #         # "worker": wid,
+            #         "method": method,
+            #     },
+            # )
 
             try:
                 result, rpc, key_env, trace = await self.router.call_once(
@@ -402,7 +427,7 @@ class AsyncRpcScheduler:
                 #     "rpc_call_done",
                 #     extra={
                 #         "task_id": meta.task_id,
-                #         "worker": wid,
+                #         # "worker": wid,
                 #         "rpc": rpc,
                 #         "key_env": key_env,
                 #         "latency_ms": round(
@@ -413,12 +438,12 @@ class AsyncRpcScheduler:
 
             except Exception as e:
                 log.warning(
-                    "rpc_call_error",
+                    "⚠️ rpc_call_error",
                     extra={
                         "task_id": meta.task_id,
-                        "worker": wid,
-                        "error": type(e).__name__,
-                        "msg": str(e),
+                        # "worker": wid,
+                        "error_type": type(e).__name__,
+                        "error": str(e),
                     },
                 )
             
@@ -451,4 +476,3 @@ class AsyncRpcScheduler:
     
         # 等 dispatcher 正常退出
         await asyncio.gather(*self.workers, return_exceptions=True)
-

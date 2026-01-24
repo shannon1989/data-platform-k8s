@@ -105,10 +105,11 @@
 | `commit_cost_sec`       | commit_transaction 本身耗时 |
 | `commit_overhead_ratio` | commit 占 batch 的比例      |
 
-
-## [0.3.0] - 2026-01-21
+## [1.0.0] - 2026-01-24
 ### Changed
 - Architecture upgrade
+- blockchain streaming ingestion - range retry/latest_block_no retry
+
 ```TXT
 ┌──────────────────────┐
 │ RPC Fetch Pool       │

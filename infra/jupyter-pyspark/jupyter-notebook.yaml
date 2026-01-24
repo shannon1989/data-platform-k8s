@@ -21,7 +21,7 @@ spec:
             - containerPort: 8888
           volumeMounts:
             - name: pyspark-notebook-data
-              mountPath: /home/jovyan/work
+              mountPath: /home/jovyan
 
           # -----------------------------
           # Volume mount (RPC config)

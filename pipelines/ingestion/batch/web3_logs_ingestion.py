@@ -10,11 +10,10 @@ from prometheus_client import start_http_server
 from confluent_kafka import KafkaException
 from src.metrics import *
 from src.logging import log
-from src.rpc_provider import RpcPool, Web3Router
+from src.rpc_provider import RpcPool, Web3Router, RpcTemporarilyUnavailable
 from src.state import resolve_start_block
 from src.kafka_utils import init_producer, get_serializers, delivery_report
 from src.web3_utils import current_utctime
-from src.rpc_provider import RpcTemporarilyUnavailable
 from src.commit_timer import CommitTimer
 from src.batch_executor import BatchContext, ParallelBatchExecutor
 from src.safe_latest import SafeLatestBlockProvider
