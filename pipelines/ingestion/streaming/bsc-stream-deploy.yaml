@@ -27,9 +27,9 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:0.1.2
+          image: web3-stream-ingestion:1.0.0
           imagePullPolicy: IfNotPresent
-          command: ["python", "web3_stream_ingestion_range_retry.py"]
+          command: ["python", "web3_stream_ingestion.py"]
 
           # -----------------------------
           # Ingest runtime variables

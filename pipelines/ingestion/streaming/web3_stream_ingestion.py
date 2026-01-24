@@ -1,29 +1,17 @@
 import os
 import json
 import uuid
-import time
 import asyncio
-from enum import Enum
-from typing import Optional
-from dataclasses import dataclass, field
 from confluent_kafka.serialization import SerializationContext, MessageField
 from prometheus_client import start_http_server
 # from confluent_kafka import KafkaException
 from src.metrics import *
 from src.logging import log
-from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult, RpcTaskMeta
+from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.state import load_last_state
 from src.kafka_utils import init_producer, get_serializers
 from src.web3_utils import current_utctime
-
-from src import (
-    RangeStatus,
-    RangeRegistry,
-    RangePlanner,
-    OrderedResultBuffer,
-    LatestBlockTracker,
-)
-
+from src import RangeResult, RangeRegistry, RangePlanner, OrderedResultBuffer, LatestBlockTracker
 
 # -----------------------------
 # Environment Variables
@@ -75,233 +63,7 @@ rpc_pool = RpcPool.from_config(rpc_configs, CHAIN)
 # Kafka Producer initialization
 # -----------------------------
 blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
-
-
-# Range Status
-class RangeStatus(str, Enum):
-    PLANNED = "PLANNED"
-    INFLIGHT = "INFLIGHT"
-    RETRYING = "RETRYING"
-    DONE = "DONE"
-    FAILED = "FAILED"
-
-# Range 数据面/执行结果（RPC → Kafka 的单位）
-@dataclass
-class RangeResult:
-    range_id: int
-    start_block: int
-    end_block: int
-    logs: list
-    rpc: str
-    key_env: str
-    task_id: int
-
-# 控制面 / 状态机, 不存logs
-@dataclass
-class RangeRecord:
-    range_id: int
-    start_block: int
-    end_block: int
-
-    status: RangeStatus = RangeStatus.PLANNED
-    retry: int = 0
-    max_retry: int = 3
-
-    last_error: str | None = None
-    last_task_id: int | None = None
-
-    created_ts: float = field(default_factory=time.time)
-    updated_ts: float = field(default_factory=time.time)
-
-    def touch(self):
-        self.updated_ts = time.time()
-
-
-class RangeRegistry:
-    """
-    Single source of truth for range lifecycle.
-    """
-
-    def __init__(self):
-        self._ranges: dict[int, RangeRecord] = {}
-
-    # -------------------------
-    # register
-    # -------------------------
-    def register(self, range_id: int, start_block: int, end_block: int) -> RangeRecord:
-        if range_id in self._ranges:
-            raise RuntimeError(f"range {range_id} already registered")
-
-        r = RangeRecord(
-            range_id=range_id,
-            start_block=start_block,
-            end_block=end_block,
-        )
-        self._ranges[range_id] = r
-        return r
-
-    # -------------------------
-    # lookup
-    # -------------------------
-    def get(self, range_id: int) -> RangeRecord:
-        try:
-            return self._ranges[range_id]
-        except KeyError:
-            raise KeyError(f"range {range_id} not found")
-
-    # -------------------------
-    # state transitions
-    # -------------------------
-    def mark_inflight(self, range_id: int, task_id: int):
-        r = self.get(range_id)
-        r.status = RangeStatus.INFLIGHT
-        r.last_task_id = task_id
-        r.touch()
-
-    def mark_done(self, range_id: int):
-        r = self.get(range_id)
-        r.status = RangeStatus.DONE
-        r.touch()
-        self._ranges.pop(range_id, None)
-
-    def mark_failed(self, range_id: int, error: str):
-        r = self.get(range_id)
-        r.status = RangeStatus.FAILED
-        r.last_error = error
-        r.touch()
-        self._ranges.pop(range_id, None)
-
-    # -------------------------
-    # retry logic
-    # -------------------------
-    def mark_retry(self, range_id: int, error: str) -> bool:
-        """
-        Returns True if retry allowed, False if exhausted.
-        """
-        r = self.get(range_id)
-
-        r.retry += 1
-        r.last_error = error
-        r.touch()
-
-        if r.retry > r.max_retry:
-            r.status = RangeStatus.FAILED
-            return False
-
-        r.status = RangeStatus.RETRYING
-        return True
-
-    # -------------------------
-    # helpers
-    # -------------------------
-    def inflight_count(self) -> int:
-        return sum(1 for r in self._ranges.values() if r.status == RangeStatus.INFLIGHT)
-
-    def active_ranges(self) -> list[RangeRecord]:
-        return [
-            r for r in self._ranges.values()
-            if r.status not in (RangeStatus.DONE, RangeStatus.FAILED)
-        ]
-
-
-# Range Planner（顺序是从这里开始的）
-@dataclass
-class BlockRange:
-    range_id: int
-    start_block: int
-    end_block: int
-
-
-class RangePlanner:
-    """
-    只负责：在 latest_block 允许的情况下，持续生成新的 block ranges
-    """
-    def __init__(self, start_block: int, range_size: int):
-        self._next_block = start_block
-        self._range_size = range_size
-        self._next_range_id = 0
-
-    def next_range(self, latest_block: int) -> Optional[BlockRange]:
-        """
-        返回下一个可提交的 BlockRange
-        如果当前链高度还不够，返回 None
-        """
-        if self._next_block > latest_block:
-            return None
-
-        start = self._next_block
-        end = min(
-            start + self._range_size - 1,
-            latest_block,
-        )
-
-        r = BlockRange(
-            range_id=self._next_range_id,
-            start_block=start,
-            end_block=end,
-        )
-
-        # 👉 推进游标
-        self._next_block = end + 1
-        self._next_range_id += 1
-
-        return r
-
-
-# OrderedResultBuffer（保证顺序提交）- ingestion 的灵魂组件
-class OrderedResultBuffer:
-    def __init__(self):
-        self._buffer = {}
-        self._next_range_id = 0
-
-    def add(self, result: RangeRecord):
-        self._buffer[result.range_id] = result
-
-    def pop_ready(self):
-        ready = []
-        while self._next_range_id in self._buffer:
-            ready.append(self._buffer.pop(self._next_range_id))
-            self._next_range_id += 1
-        return ready
-
-
-class LatestBlockTracker:
-    def __init__(self, router, refresh_interval=2.0):
-        self.router = router
-        self.refresh_interval = refresh_interval
-        self._latest: int | None = None
-        self._lock = asyncio.Lock()
-        self._task: asyncio.Task | None = None
-        self._stopped = False
-
-    def get_cached(self) -> int | None:
-        """
-        永不 await RPC, 只读缓存
-        """
-        return self._latest
-
-    async def _refresh_loop(self):
-        while not self._stopped:
-            try:
-                latest = await self.router.get_latest_block()
-                async with self._lock:
-                    self._latest = latest
-            except Exception as e:
-                log.warning(
-                    "⚠️ latest_block_refresh_failed",
-                    extra={"error": str(e)},
-                )
-            await asyncio.sleep(self.refresh_interval)
-
-    def start(self):
-        if not self._task:
-            self._task = asyncio.create_task(self._refresh_loop())
-
-    async def stop(self):
-        self._stopped = True
-        if self._task:
-            await self._task
-
+producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
 
 async def submit_range(scheduler, registry, r):
@@ -321,11 +83,8 @@ async def submit_range(scheduler, registry, r):
             },
         )
     )
-
     registry.mark_inflight(r.range_id, task_id=id(task))
     return task
-
-
 
 async def stream_ingest_logs(
     *,
@@ -591,8 +350,6 @@ async def main():
             "start_block": last_block + 1,
         },
     )
-
-    producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
     await stream_ingest_logs(start_block=last_block + 1,
         range_size=RANGE_SIZE,
