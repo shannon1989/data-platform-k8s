@@ -4,15 +4,15 @@ import uuid
 import asyncio
 from confluent_kafka.serialization import SerializationContext, MessageField
 from prometheus_client import start_http_server
-# from confluent_kafka import KafkaException
-from src.metrics import *
+
 from src.logging import log
 from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.state import load_last_state
 from src.kafka_utils import init_producer, get_serializers
 from src.web3_utils import current_utctime
 from src import RangeResult, RangeRegistry, RangePlanner, OrderedResultBuffer, LatestBlockTracker
-
+from src.metrics import MetricsContext
+from src.metrics.runtime import set_current_metrics, get_metrics
 # -----------------------------
 # Environment Variables
 # -----------------------------
@@ -227,6 +227,12 @@ async def stream_ingest_logs(
 
                 for bn, txs in logs_by_block.items():
                     total_tx = len(txs)
+                    
+                    metrics = get_metrics()
+                    metrics.block_processed.inc()
+                    metrics.tx_processed.inc(total_tx)
+                    
+                    
                     for idx, tx in enumerate(txs):
                         
                         tx_record = {
@@ -251,9 +257,8 @@ async def stream_ingest_logs(
                     producer.poll(0)
 
 
-                BLOCK_PROCESSED.labels(chain=CHAIN, job=JOB_MODE).inc()
-                TX_PROCESSED.labels(chain=CHAIN, job=JOB_MODE).inc(total_tx)
-                TX_PER_BLOCK.labels(chain=CHAIN, job=JOB_MODE).observe(total_tx)
+                
+                
                 
                 # -----------------------------------------
                 # commit checkpoint（range 级）
@@ -299,11 +304,17 @@ async def stream_ingest_logs(
                         "log_count": len(rr.logs),
                     },
                 )
+                
+                # 系统 checkpoint 推进速度
+                metrics.tx_per_block.observe(total_tx)
+                metrics.block_committed.inc()
+                metrics.tx_committed.inc(total_tx)
 
                 latest_block = latest_tracker.get_cached()
                 if latest_block is not None:
-                    CHECKPOINT_BLOCK.labels(chain=CHAIN, job=JOB_MODE).set(last_committed_block)
-                    CHECKPOINT_LAG.labels(chain=CHAIN, job=JOB_MODE).set(max(0, latest_block - last_committed_block))
+                    metrics.chain_latest_block.set(latest_block)
+                    metrics.checkpoint_block.set(last_committed_block)
+                    metrics.checkpoint_lag.set(max(0, latest_block - last_committed_block))
             
             # -----------------------------------------
             # 下游释放 → 上游补位（严格受 registry 控制）
@@ -330,6 +341,9 @@ async def stream_ingest_logs(
 
 # Entrypoint
 async def main():
+    
+    metrics = MetricsContext.from_env()
+    set_current_metrics(metrics)
 
     last_state = load_last_state(
         job_name=JOB_NAME,
@@ -340,6 +354,8 @@ async def main():
 
     last_block = last_state["checkpoint"]
 
+    last_block = 73535846
+    
     log.info(
         "▶️job_start",
         extra={

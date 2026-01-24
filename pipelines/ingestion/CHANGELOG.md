@@ -110,56 +110,16 @@
 - Architecture upgrade
 - blockchain streaming ingestion - range retry/latest_block_no retry
 
-```TXT
-┌──────────────────────┐
-│ RPC Fetch Pool       │
-│ (N workers)          │
-│                      │
-│ - acquire key        │
-│ - call RPC           │
-│ - timeout / failover │
-│ - output (range,logs)│
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ In-Memory Queue      │  ← 解耦点（关键）
-│ (asyncio.Queue)      │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Kafka Writer Pool    │
-│ (1~2 threads)        │
-│                      │
-│ - begin txn          │
-│ - produce logs       │
-│ - report success     │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ CommitCoordinator    │
-│                      │
-│ - track range state  │
-│ - write checkpoint   │
-│ - commit txn         │
-└──────────────────────┘
-```
-```TXT
-Flink vs Sliding Window Executor
-| Flink                  | Sliding Window Executor     |
-| ---------------------- | --------------------------- |
-| Source                 | RPC Fetch Worker            |
-| Operator               | range processor             |
-| State                  | range_done_map / checkpoint |
-| Barrier                | range 完成事件               |
-| Sink                   | Kafka writer                |
-| Checkpoint Coordinator | CommitCoordinator           |
-```
 
+## [1.0.1] - 2026-01-24
+### Changed
+- Add metrics/metricsContext/metricsRuntime
+- Update Grafana dashboard, show ingested / committed logs per sec
+- logs processing speed increased from 3K/s to 20k/s with inflight worker 10
 
-
+## [1.0.2] - 2026-01-25
+### Changed
+- 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned

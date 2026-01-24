@@ -7,8 +7,16 @@ import uuid
 from dataclasses import dataclass
 from typing import NamedTuple
 import itertools
-from src.metrics import RPC_SUBMITTED, RPC_STARTED, RPC_COMPLETED, RPC_FAILED, RPC_QUEUE_SIZE, RPC_INFLIGHT, RPC_LATENCY, RPC_QUEUE_WAIT
 from src.logging import log
+
+from src.metrics.runtime import get_metrics
+
+_m = None
+def m():
+    global _m
+    if _m is None:
+        _m = get_metrics()
+    return _m
 
 # -----------------------------
 # Exceptions
@@ -280,7 +288,7 @@ class Web3AsyncRouter:
 
             except Exception:
                 # p.cooldown(5)
-                RPC_FAILED.labels(provider=p.name, key=key_env).inc()
+                m().rpc_failed_inc(provider=p.name, key=key_env)
                 raise
 
         raise RpcTemporarilyUnavailable()
@@ -345,8 +353,8 @@ class AsyncRpcScheduler:
 
         await self.queue.put((method, params, fut, task_meta))
 
-        RPC_SUBMITTED.inc()
-        RPC_QUEUE_SIZE.set(self.queue.qsize())
+        m().rpc_submitted_inc()
+        m().rpc_queue_size_set(self.queue.qsize())
         
         return await fut
 
@@ -369,8 +377,8 @@ class AsyncRpcScheduler:
             dispatch_ts = time.time()
 
             queue_wait_ms = (dispatch_ts - meta.submit_ts) * 1000
-            RPC_QUEUE_WAIT.observe(queue_wait_ms)
-            RPC_QUEUE_SIZE.set(self.queue.qsize())
+            m().rpc_queue_wait_observe(queue_wait_ms)
+            m().rpc_queue_size_set(self.queue.qsize())
             
             # log.info(
             #     "rpc_dispatch",
@@ -395,8 +403,8 @@ class AsyncRpcScheduler:
         async with self.inflight:
             rpc_start_ts = time.time()
 
-            RPC_STARTED.inc()
-            RPC_INFLIGHT.inc()
+            m().rpc_started.inc()
+            m().rpc_inflight.inc()
             
             # log.info(
             #     "rpc_call_start",
@@ -412,11 +420,11 @@ class AsyncRpcScheduler:
                     method, params
                 )
                 
-                RPC_COMPLETED.labels(provider=rpc, key=key_env).inc()
+                m().rpc_completed_inc(rpc, key_env)
                 
                 if trace and trace.total_ms is not None:
                     # key 级别的问题 用 Counter 看，延迟分布 只看 provider 级
-                    RPC_LATENCY.labels(provider=rpc).observe(trace.total_ms)
+                    m().rpc_latency_observe(rpc, trace.total_ms)
                     
                 if not fut.done():
                     fut.set_result(
@@ -458,7 +466,7 @@ class AsyncRpcScheduler:
                         )
                     )
             finally:
-                RPC_INFLIGHT.dec()
+                m().rpc_inflight.dec()
 
 
     async def close(self):

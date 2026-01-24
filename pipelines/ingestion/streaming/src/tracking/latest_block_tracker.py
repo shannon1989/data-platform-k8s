@@ -1,4 +1,5 @@
 import asyncio
+from src.logging import log
 
 # 外部链状态
 # 弱一致

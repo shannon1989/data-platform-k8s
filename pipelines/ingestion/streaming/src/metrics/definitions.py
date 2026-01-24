@@ -43,6 +43,18 @@ BLOCK_PROCESSED = Counter(
     ["chain", "job"],
 )
 
+TX_COMMITTED = Counter(
+    "committed_tx_total",
+    "Total number of transactions committed",
+    ["chain", "job"],
+)
+BLOCK_COMMITTED = Counter(
+    "committed_block_total",
+    "Total number of blocks committed",
+    ["chain", "job"],
+)
+
+
 TX_PER_BLOCK = Histogram(
     "ingestion_tx_per_block",
     "Transactions per block",
@@ -78,47 +90,52 @@ COMMIT_INTERVAL_LATEST = Gauge(
 # -----------------------------
 RPC_SUBMITTED = Counter(
     "rpc_submitted_total",
-    "Total RPC requests submitted"
+    "Total RPC requests submitted",
+    ["chain", "job"]
 )
 
 RPC_STARTED = Counter(
     "rpc_started_total",
-    "Total RPC requests started"
+    "Total RPC requests started",
+    ["chain", "job"]
 )
 
 RPC_COMPLETED = Counter(
     "rpc_completed_total",
     "Total RPC requests completed successfully",
-    ["provider", "key"]
+    ["chain", "job", "provider", "key"]
 )
 
 # Counter（高基数 OK）
 RPC_FAILED = Counter(
     "rpc_failed_total",
     "Total RPC requests failed",
-    ["provider", "key"]
+    ["chain", "job", "provider", "key"],
 )
 
 RPC_QUEUE_SIZE = Gauge(
     "rpc_queue_size",
-    "Current RPC queue size"
+    "Current RPC queue size",
+    ["chain", "job"]
 )
 
 RPC_INFLIGHT = Gauge(
     "rpc_inflight",
-    "Current inflight RPC count"
+    "Current inflight RPC count",
+    ["chain", "job"]
 )
 
 # Histogram（低基数）
 RPC_LATENCY = Histogram(
-    "rpc_latency_seconds",
+    "rpc_latency_ms",
     "RPC call latency",
-    ["provider"],
-    buckets=(50, 100, 200, 500, 1000, 2000, 5000)
+    ["chain", "job", "provider"],
+    buckets=(100, 200, 500, 1000, 2000, 5000, 10000, 20000)
 )
 
 RPC_QUEUE_WAIT = Histogram(
     "rpc_queue_wait_seconds",
     "RPC queue wait time",
-    buckets=(0.01, 0.05, 0.1, 0.5, 1, 2, 5),
+    ["chain", "job"],
+    buckets=(0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 50),
 )
