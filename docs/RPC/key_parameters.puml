@@ -1,0 +1,57 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+class RpcKeySlot {
+  min_interval
+}
+
+note right of RpcKeySlot
+key_interval:
+Time-based rate limit
+Controls *when* a request
+may be issued
+end note
+
+
+class RpcProvider {
+  weight
+}
+
+note right of RpcProvider
+weight:
+Resource allocation factor
+Defines provider
+selection order
+end note
+
+
+class AsyncRpcScheduler {
+  inflight
+  queue
+}
+
+note right of AsyncRpcScheduler
+rpc_max_inflight:
+Maximum concurrent
+in-flight RPC calls
+
+max_queue:
+Backpressure buffer
+to absorb bursts
+end note
+
+
+class RangePlanner
+
+note right of RangePlanner
+max_inflight_ranges:
+Global sliding window
+for unfinished ranges
+end note
+
+
+RangePlanner --> AsyncRpcScheduler : submit ranges
+
+@enduml

@@ -12,7 +12,7 @@ metadata:
 spec:
   replicas: 1
   # strategy:
-  #   type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）；在state compact topic (checkpoint)下不需要
+  #   type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）
   selector:
     matchLabels:
       app: logs-ingestion

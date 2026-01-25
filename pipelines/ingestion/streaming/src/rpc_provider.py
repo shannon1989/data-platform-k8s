@@ -215,7 +215,7 @@ class RpcPool:
         
     def pick_providers(self):
         """
-        根据 weight 生成一个 provider 尝试顺序
+        根据 weight 生成一个 provider 尝试顺序 (weight越大, 越先尝试这个provider)
         """
         candidates = []
 

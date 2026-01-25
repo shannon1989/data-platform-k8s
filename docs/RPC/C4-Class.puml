@@ -1,0 +1,68 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class AsyncRpcScheduler {
+  - queue: asyncio.Queue
+  - inflight: asyncio.Semaphore
+  - workers: list[Task]
+  - _closed: bool
+  + submit()
+  + _dispatcher_loop()
+  + _execute_rpc()
+  + close()
+}
+
+class Web3AsyncRouter {
+  - rpc_pool: RpcPool
+  - client: AsyncRpcClient
+  + call_once()
+  + get_latest_block()
+}
+
+class RpcPool {
+  - providers: list[RpcProvider]
+  + pick_providers()
+  + from_config()
+}
+
+class RpcProvider {
+  + name: str
+  + base_url: str
+  + weight: int
+  - cooldown_until: float
+  - slots: list[RpcKeySlot]
+  - _rr: int
+  + available()
+  + acquire_slot()
+}
+
+class RpcKeySlot {
+  + key_env: str
+  + min_interval: float
+  - _lock: asyncio.Lock
+  - _next_available: float
+  + acquire()
+}
+
+class AsyncRpcClient {
+  + timeout: int
+  + call()
+}
+
+class RpcTrace
+class RpcTaskMeta
+class RpcErrorResult
+
+AsyncRpcScheduler --> Web3AsyncRouter : uses
+AsyncRpcScheduler --> RpcTaskMeta
+AsyncRpcScheduler --> RpcErrorResult
+
+Web3AsyncRouter --> RpcPool
+Web3AsyncRouter --> AsyncRpcClient
+
+RpcPool "1" --> "*" RpcProvider
+RpcProvider "1" --> "*" RpcKeySlot
+
+AsyncRpcClient --> RpcTrace
+
+@enduml

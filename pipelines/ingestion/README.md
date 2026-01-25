@@ -23,28 +23,6 @@ docker build -t eth-ingestion:latest .
 ```
 
 ```YAML
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: eth-block-ingestion-test
-  namespace: airflow
-spec:
-  backoffLimit: 1
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: eth-ingestion
-        image: eth-ingestion:latest
-        env:
-        - name: ETH_RPC_URL
-          valueFrom:
-            secretKeyRef:
-              name: eth-secrets
-              key: rpc_url
-```
-
-```YAML
 kubectl create secret generic eth-secrets \
   -n airflow \
   --from-literal=rpc_url=https://mainnet.infura.io/v3/YOUR_API_KEY
@@ -101,17 +79,6 @@ spec:
 eval $(minikube docker-env)
 docker build -t eth-backfill:0.1.4 .
 
-只有当 同时满足以下 3 条，才值得高度抽象：
- - 5+ 条链
- - 10+ ingestion job
- - 有 2–3 个开发者长期维护
-否则，高度抽象 一定是负资产。
-
-在数据工程里：
-  可读性 > 优雅性
-  局部重复 > 全局风险
-  清晰脚本 > 抽象体系
-
 Clash ubuntu server install:
 ```bash
 sudo wget https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/mihomo-linux-amd64-v2-alpha-1e1434d.gz
@@ -147,11 +114,3 @@ helm install loki grafana/loki-stack \
   --set grafana.enabled=false \
   --set promtail.enabled=true
 ```
-
-修改 promtail DaemonSet（最有效）
-kubectl -n prometheus edit ds loki-promtail
-securityContext:
-  runAsUser: 0
-
-- name: PROMTAIL_ULIMIT_NOFILE
-  value: "65536"

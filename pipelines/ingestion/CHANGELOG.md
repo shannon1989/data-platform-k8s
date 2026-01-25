@@ -119,7 +119,13 @@
 
 ## [1.0.2] - 2026-01-25
 ### Changed
-- 
+- Design and implement backfill 
+  - backfill with time(2026-01-01 10:30:00 - 2026-01-01 11:30:00)
+  - backfill with date (2026-01-01 to 2026-01-01) = [2026-01-01 00:00:00, 2026-01-01 00:00:00)
+  - Backfill with block (73577112 to 73578112)
+
+
+
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned
