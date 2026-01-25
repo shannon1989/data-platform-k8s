@@ -94,6 +94,9 @@ async def stream_ingest_logs(
     producer,
     max_inflight_ranges: int = 20,
 ):
+    # Init metrics
+    metrics = get_metrics()
+    
     # -----------------------------
     # RPC infra
     # -----------------------------
@@ -228,7 +231,6 @@ async def stream_ingest_logs(
                 for bn, txs in logs_by_block.items():
                     total_tx = len(txs)
                     
-                    metrics = get_metrics()
                     metrics.block_processed.inc()
                     metrics.tx_processed.inc(total_tx)
                     
@@ -353,8 +355,6 @@ async def main():
     )
 
     last_block = last_state["checkpoint"]
-
-    # last_block = 73535846
     
     log.info(
         "▶️job_start",
