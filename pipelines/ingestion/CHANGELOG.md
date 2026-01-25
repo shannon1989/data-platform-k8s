@@ -117,14 +117,24 @@
 - Update Grafana dashboard, show ingested / committed logs per sec
 - logs processing speed increased from 3K/s to 20k/s with inflight worker 10
 
-## [1.0.2] - 2026-01-25
+## [1.0.1] - 2026-01-25
+### Changed
+- get_metrics() bug fix
+- add RPC documentation
+
+## [1.0.2] - 2026-01-26
+### Changed
+- Add metrics: range_inflight - 是否长期贴近 max_inflight_ranges
+- rpc_queue_utilization - 队列是否溢出风险
+- rpc_inflight_utilization - 利用率视角
+- rpc_key_unavailable - Time 维度是否成为瓶颈的“真相指标”
+
+## [1.0.3] - 2026-01-27
 ### Changed
 - Design and implement backfill 
-  - backfill with time(2026-01-01 10:30:00 - 2026-01-01 11:30:00)
+  - backfill with time (2026-01-01 10:30:00 - 2026-01-01 11:30:00)
   - backfill with date (2026-01-01 to 2026-01-01) = [2026-01-01 00:00:00, 2026-01-01 00:00:00)
   - Backfill with block (73577112 to 73578112)
-
-
 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)

@@ -155,7 +155,7 @@
         ]
       },
       "gridPos": {
-        "h": 6,
+        "h": 5,
         "w": 12,
         "x": 0,
         "y": 1
@@ -338,7 +338,7 @@
         ]
       },
       "gridPos": {
-        "h": 6,
+        "h": 5,
         "w": 12,
         "x": 12,
         "y": 1
@@ -405,7 +405,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 6
       },
       "id": 35,
       "panels": [],
@@ -448,7 +448,7 @@
         "h": 5,
         "w": 4,
         "x": 0,
-        "y": 8
+        "y": 7
       },
       "id": 8,
       "options": {
@@ -545,7 +545,7 @@
         "h": 5,
         "w": 11,
         "x": 4,
-        "y": 8
+        "y": 7
       },
       "id": 1,
       "options": {
@@ -645,7 +645,7 @@
         "h": 5,
         "w": 9,
         "x": 15,
-        "y": 8
+        "y": 7
       },
       "id": 3,
       "options": {
@@ -712,7 +712,7 @@
         "h": 5,
         "w": 4,
         "x": 0,
-        "y": 13
+        "y": 12
       },
       "id": 9,
       "interval": "5s",
@@ -805,7 +805,7 @@
         "h": 5,
         "w": 11,
         "x": 4,
-        "y": 13
+        "y": 12
       },
       "id": 13,
       "options": {
@@ -921,7 +921,7 @@
         "h": 5,
         "w": 9,
         "x": 15,
-        "y": 13
+        "y": 12
       },
       "id": 4,
       "options": {
@@ -1026,10 +1026,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 5,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 17
       },
       "id": 14,
       "options": {
@@ -1081,7 +1081,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 22
       },
       "id": 22,
       "panels": [],
@@ -1116,7 +1116,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 25
+        "y": 23
       },
       "id": 33,
       "interval": "5s",
@@ -1219,7 +1219,7 @@
         "h": 5,
         "w": 20,
         "x": 4,
-        "y": 25
+        "y": 23
       },
       "id": 15,
       "options": {
@@ -1305,7 +1305,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 29
+        "y": 27
       },
       "id": 19,
       "interval": "5s",
@@ -1404,10 +1404,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 5,
         "w": 20,
         "x": 4,
-        "y": 30
+        "y": 28
       },
       "id": 52,
       "options": {
@@ -1467,7 +1467,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 33
+        "y": 31
       },
       "id": 49,
       "interval": "5s",
@@ -1568,7 +1568,7 @@
         "h": 5,
         "w": 20,
         "x": 4,
-        "y": 36
+        "y": 33
       },
       "id": 50,
       "options": {
@@ -1634,10 +1634,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 3,
         "w": 4,
         "x": 0,
-        "y": 37
+        "y": 35
       },
       "id": 38,
       "interval": "5s",
@@ -1730,10 +1730,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 5,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 38
       },
       "id": 37,
       "options": {
@@ -1829,7 +1829,7 @@
         "h": 5,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 43
       },
       "id": 34,
       "options": {
@@ -1865,70 +1865,17 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 7,
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 54
+        "y": 48
       },
-      "id": 20,
-      "options": {
-        "displayLabels": [],
-        "legend": {
-          "calcs": [],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "percent"
-          ]
-        },
-        "pieType": "donut",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "sort": "desc",
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum by (provider) (increase(rpc_failed_total{chain=~\"$chain\"}[$__range]))",
-          "legendFormat": "{{rpc}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "RPC Errors Counts per Provider",
-      "type": "piechart"
+      "id": 21,
+      "panels": [],
+      "title": "RPC Monitoring per Provider/Key",
+      "type": "row"
     },
     {
       "datasource": {
@@ -1990,10 +1937,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 17,
-        "x": 7,
-        "y": 54
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 49
       },
       "id": 51,
       "options": {
@@ -2029,17 +1976,70 @@
       "type": "timeseries"
     },
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 62
+      "datasource": {
+        "uid": "prometheus"
       },
-      "id": 21,
-      "panels": [],
-      "title": "RPC Monitoring per Provider/Key",
-      "type": "row"
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 56
+      },
+      "id": 20,
+      "options": {
+        "displayLabels": [],
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "sort": "desc",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (provider) (increase(rpc_failed_total{chain=~\"$chain\"}[$__range]))",
+          "legendFormat": "{{rpc}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "RPC Errors per Provider",
+      "type": "piechart"
     },
     {
       "datasource": {
@@ -2062,10 +2062,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 7,
         "w": 8,
-        "x": 0,
-        "y": 63
+        "x": 8,
+        "y": 56
       },
       "id": 17,
       "options": {
@@ -2127,10 +2127,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 7,
         "w": 8,
-        "x": 8,
-        "y": 63
+        "x": 16,
+        "y": 56
       },
       "id": 30,
       "options": {
@@ -2170,71 +2170,6 @@
       ],
       "title": "RPC Reqs per key",
       "type": "piechart"
-    },
-    {
-      "datasource": {
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 63
-      },
-      "id": 31,
-      "options": {
-        "displayLabels": [],
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "percent"
-          ]
-        },
-        "pieType": "donut",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "sort": "desc",
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum by (key) (increase(rpc_failed_total{chain=~\"$chain\"}[$__range]))",
-          "legendFormat": "{{key_env}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "RPC Errors per key",
-      "type": "piechart"
     }
   ],
   "preload": false,
@@ -2270,12 +2205,12 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Blockchain Streaming Ingestion Overview",
   "uid": "multi-chain-ingestion",
-  "version": 135
+  "version": 137
 }

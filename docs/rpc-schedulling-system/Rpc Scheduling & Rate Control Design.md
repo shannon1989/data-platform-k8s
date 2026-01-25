@@ -35,6 +35,7 @@ At a high level:
 ## 3. Three‑Dimensional Rate Control Model
 
 The entire system forms a **three‑dimensional rate‑limiting mechanism**:
+each dimension is independently enforced and composes into a stable, backpressure-aware ingestion pipeline.
 
 > **Time × Concurrency × Window**
 
@@ -57,12 +58,14 @@ These dimensions work together to prevent overload at different layers.
 | Parameter      | Responsibility                         | Decision Meaning                                   |
 | -------------- | -------------------------------------- | -------------------------------------------------- |
 | `weight`       | Generates provider attempt order       | **Resource quota** (who gets inflight slots first) |
-| `key_interval` | Enforces provider‑specific rate policy | **Can you send *now*?**                            |
+| `key_interval` | Enforces provider‑specific rate policy (rate ceiling) | **Can you send *now*?**                            |
 
 * `weight` controls *priority under contention*
 * `key_interval` controls *minimum time gap per key*
 
 Important: **`key_interval` does NOT limit queueing**, only execution timing.
+
+**When rpc_max_inflight and max_inflight_ranges are fixed, per-provider key_interval controls the sustainable throughput of that provider, and therefore the aggregate system throughput, until another dimension becomes the bottleneck.**
 
 ---
 
