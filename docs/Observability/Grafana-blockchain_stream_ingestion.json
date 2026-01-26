@@ -543,7 +543,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 11,
+        "w": 10,
         "x": 4,
         "y": 7
       },
@@ -643,8 +643,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 9,
-        "x": 15,
+        "w": 10,
+        "x": 14,
         "y": 7
       },
       "id": 3,
@@ -657,7 +657,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -803,7 +803,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 11,
+        "w": 10,
         "x": 4,
         "y": 12
       },
@@ -817,7 +817,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -919,8 +919,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 9,
-        "x": 15,
+        "w": 10,
+        "x": 14,
         "y": 12
       },
       "id": 4,
@@ -933,7 +933,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -964,11 +964,24 @@
       "type": "timeseries"
     },
     {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 22,
+      "panels": [],
+      "title": "RPC Health Overview (latency + error + concurrency)",
+      "type": "row"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": " | bucket | 意义        |\n| ------ | --------- |\n | p50    | median   |\n | p95    | busy blocks   |\n | p99    | extreme blocks |\n | p95/p99 | 表示 ingestion 在高负载区块下的压力边界 |",
+      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -993,7 +1006,7 @@
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
-            "pointSize": 3,
+            "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
@@ -1026,12 +1039,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 6,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 18
       },
-      "id": 14,
+      "id": 54,
       "options": {
         "legend": {
           "calcs": [],
@@ -1041,7 +1054,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -1049,55 +1062,86 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(ingestion_tx_per_block_bucket{chain=~\"$chain\"}[5m])) by (le))",
-          "hide": false,
-          "legendFormat": "p50",
+          "expr": "sum(range_inflight{chain=~\"$chain\"})",
+          "legendFormat": "range_inflight",
           "range": true,
           "refId": "A"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(ingestion_tx_per_block_bucket{chain=~\"$chain\"}[5m])) by (le))",
+          "expr": "sum(max_range_inflight{chain=~\"$chain\"})",
           "hide": false,
-          "legendFormat": "p95",
+          "instant": false,
+          "legendFormat": "max_range_inflight",
           "range": true,
-          "refId": "B"
+          "refId": "D"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(ingestion_tx_per_block_bucket{chain=~\"$chain\"}[5m])) by (le))",
-          "hide": false,
-          "legendFormat": "p99",
+          "expr": "# sum(rpc_submitted_total{chain=~\"$chain\"}) - sum(rpc_completed_total{chain=~\"$chain\"})\r\n# sum by (chain) (increase(rpc_submitted_total{chain=~\"$chain\"}[$__range])) - \r\n# sum by (chain) (increase(rpc_completed_total{chain=~\"$chain\"}[$__range]))\r\n\r\nsum by (chain) (increase(rpc_submitted_total{chain=~\"$chain\"}[$__range]) - increase(rpc_completed_total{chain=~\"$chain\"}[$__range]))",
+          "hide": true,
+          "instant": false,
+          "legendFormat": "backlog",
           "range": true,
-          "refId": "C"
+          "refId": "B"
         }
       ],
-      "title": "Log TX per Block (P50 / P95 / P99)",
+      "title": "Range Inflight vs Backlog",
       "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 22
-      },
-      "id": 22,
-      "panels": [],
-      "title": "RPC Health Overview (latency + error + concurrency)",
-      "type": "row"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "rpc_errors_total/rpc_requests_total",
+      "description": "最近 5 分钟，系统“新进来的 RPC” 和 “处理完的 RPC” 的差值\n- 指标 ≈ 0 ——「系统稳态（Stable）」 ✅\n- 指标 > 0 ——「系统在积债（Overloaded）」 ⚠️\n- 指标 < 0 ——「系统在还债（Draining）」 🧹",
       "fieldConfig": {
         "defaults": {
-          "decimals": 2,
-          "fieldMinMax": false,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1105,6 +1149,10 @@
               {
                 "color": "green",
                 "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
@@ -1113,44 +1161,43 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 6,
+        "w": 24,
         "x": 0,
-        "y": 23
+        "y": 24
       },
-      "id": 33,
-      "interval": "5s",
-      "maxDataPoints": 300,
+      "id": 57,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": false
         },
-        "showPercentChange": true,
-        "textMode": "auto",
-        "wideLayout": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
       },
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "editorMode": "code",
-          "expr": "1- sum(\r\n    increase(rpc_failed_total{chain=~\"$chain\"}[$__range])\r\n) / \r\nsum(\r\n    increase(rpc_started_total{chain=~\"$chain\"}[$__range])\r\n)",
-          "format": "time_series",
-          "legendFormat": "{{rpc}}",
+          "expr": "sum(\r\n  rate(rpc_submitted_total{chain=~\"$chain\"}[5m])\r\n-\r\n  rate(rpc_finished_total{chain=~\"$chain\"}[5m])\r\n)",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "submit rate - finish rate",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "RPC Succcess Rate",
-      "type": "stat"
+      "title": "Backlog (Net Inflow)",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -1216,10 +1263,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 20,
-        "x": 4,
-        "y": 23
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 30
       },
       "id": 15,
       "options": {
@@ -1231,7 +1278,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -1275,70 +1322,6 @@
       ],
       "title": "RPC Call Latency / ms (P50 / P95 / P99)",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "Total RPC requests failed",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 27
-      },
-      "id": 19,
-      "interval": "5s",
-      "maxDataPoints": 300,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum(\r\n increase(rpc_failed_total{chain=~\"$chain\"}[$__range])\r\n)",
-          "legendFormat": "{{rpc}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total RPC Errors",
-      "type": "stat"
     },
     {
       "datasource": {
@@ -1404,10 +1387,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 20,
-        "x": 4,
-        "y": 28
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 36
       },
       "id": 52,
       "options": {
@@ -1419,8 +1402,8 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "pluginVersion": "12.3.1",
@@ -1447,9 +1430,200 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Total RPC requests completed successfully",
+      "description": "| metrics | 意义        |\n| ------ | --------- |\n| rpc_submitted_total  |  进来的压力\n| rpc_inflight    |  正在占用外部资源\n| rpc_completed_total  | 吞吐\n| rpc_queue_wait_ms | submit → dispatch 延迟",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 56,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (provider) (rate(rpc_completed_total[1m]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{provider}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "RPC Completed Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "rpc_key_unavailable 越高，说明这个 key 更频繁地“被时间维度限流挡在门外”\n👉 它反映的是 key_interval 与真实请求到达节奏之间的张力\n\nrpc_key_unavailable_total\n= 请求到达时\n  ❌ 因 key_interval 尚未冷却\n  ❌ 被拒绝 / 延迟\n",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "id": 55,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": false
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum by (key) (rate(rpc_key_unavailable_total[1m]))",
+          "legendFormat": "{{key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "RPC Key Unavailable Rate",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1464,43 +1638,41 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 7,
+        "w": 24,
         "x": 0,
-        "y": 31
+        "y": 55
       },
-      "id": 49,
-      "interval": "5s",
-      "maxDataPoints": 300,
+      "id": 37,
       "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "pluginVersion": "12.3.1",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(\r\n    increase(rpc_completed_total{chain=~\"$chain\"}[$__range])\r\n)",
+          "expr": "sum by (provider) (\r\n  rate(\r\n    rpc_completed_total{\r\n      chain=~\"$chain\"\r\n    }[30s]\r\n  )\r\n)\r\n",
+          "hide": false,
           "legendFormat": "{{rpc}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Total RPC Completed",
-      "type": "stat"
+      "title": "RPC Provider Usage",
+      "type": "state-timeline"
     },
     {
       "datasource": {
@@ -1560,15 +1732,16 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "ms"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 20,
-        "x": 4,
-        "y": 33
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 62
       },
       "id": 50,
       "options": {
@@ -1580,7 +1753,7 @@
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "single",
+          "mode": "multi",
           "sort": "none"
         }
       },
@@ -1588,14 +1761,14 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum(rate(rpc_queue_wait_seconds_bucket{chain=~\"$chain\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.5, sum(rate(rpc_queue_wait_ms_bucket{chain=~\"$chain\"}[1m])) by (le))",
           "legendFormat": "p50",
           "range": true,
           "refId": "A"
         },
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(rpc_queue_wait_seconds_bucket{chain=~\"$chain\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(rpc_queue_wait_ms_bucket{chain=~\"$chain\"}[1m])) by (le))",
           "hide": false,
           "legendFormat": "p95",
           "range": true,
@@ -1603,7 +1776,7 @@
         },
         {
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(rpc_queue_wait_seconds_bucket{chain=~\"$chain\"}[1m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(rpc_queue_wait_ms_bucket{chain=~\"$chain\"}[1m])) by (le))",
           "legendFormat": "p99",
           "range": true,
           "refId": "C"
@@ -1613,13 +1786,28 @@
       "type": "timeseries"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "id": 21,
+      "panels": [],
+      "title": "RPC Monitoring per Provider/Key",
+      "type": "row"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "全链总并发（防雪崩）",
+      "description": "rpc_errors_total/rpc_requests_total",
       "fieldConfig": {
         "defaults": {
+          "decimals": 2,
+          "fieldMinMax": false,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1627,19 +1815,24 @@
               {
                 "color": "green",
                 "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 0
               }
             ]
-          }
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
+        "h": 7,
         "w": 4,
         "x": 0,
-        "y": 35
+        "y": 69
       },
-      "id": 38,
+      "id": 33,
       "interval": "5s",
       "maxDataPoints": 300,
       "options": {
@@ -1655,7 +1848,7 @@
           "fields": "",
           "values": false
         },
-        "showPercentChange": false,
+        "showPercentChange": true,
         "textMode": "auto",
         "wideLayout": true
       },
@@ -1663,105 +1856,15 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rpc_inflight{chain=~\"$chain\"})",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total RPC Inflight",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 25,
-            "gradientMode": "hue",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 38
-      },
-      "id": 37,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.1",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "sum by (provider) (\r\n  rate(\r\n    rpc_completed_total{\r\n      chain=~\"$chain\"\r\n    }[30s]\r\n  )\r\n)\r\n",
-          "hide": false,
+          "expr": "sum(\r\n    increase(rpc_failed_total{chain=~\"$chain\"}[$__range])\r\n) / \r\nsum(\r\n    increase(rpc_started_total{chain=~\"$chain\"}[$__range])\r\n)",
+          "format": "time_series",
           "legendFormat": "{{rpc}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "RPC Provider Usage",
-      "type": "timeseries"
+      "title": "RPC Error Rate",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1826,10 +1929,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 43
+        "h": 7,
+        "w": 20,
+        "x": 4,
+        "y": 69
       },
       "id": 34,
       "options": {
@@ -1863,19 +1966,6 @@
       ],
       "title": "Error rate by key",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 48
-      },
-      "id": 21,
-      "panels": [],
-      "title": "RPC Monitoring per Provider/Key",
-      "type": "row"
     },
     {
       "datasource": {
@@ -1940,7 +2030,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 76
       },
       "id": 51,
       "options": {
@@ -1972,7 +2062,7 @@
           "refId": "A"
         }
       ],
-      "title": "RPC Error Rate by Provider",
+      "title": "Error Rate by Provider",
       "type": "timeseries"
     },
     {
@@ -1999,7 +2089,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 56
+        "y": 83
       },
       "id": 20,
       "options": {
@@ -2065,7 +2155,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 56
+        "y": 83
       },
       "id": 17,
       "options": {
@@ -2130,7 +2220,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 56
+        "y": 83
       },
       "id": 30,
       "options": {
@@ -2185,9 +2275,11 @@
       {
         "allowCustomValue": false,
         "current": {
-          "text": "All",
+          "text": [
+            "bsc"
+          ],
           "value": [
-            "$__all"
+            "bsc"
           ]
         },
         "datasource": "Prometheus",
@@ -2212,5 +2304,5 @@
   "timezone": "browser",
   "title": "Blockchain Streaming Ingestion Overview",
   "uid": "multi-chain-ingestion",
-  "version": 137
+  "version": 148
 }
