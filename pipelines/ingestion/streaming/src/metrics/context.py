@@ -26,24 +26,31 @@ class MetricsContext:
     commit_interval: any
     commit_interval_latest: any
 
-    # -------- RPC（部分需要二次 labels）--------
+    # -------- RPC（无二次 labels）--------
     rpc_submitted: any
+    rpc_finished: any
     rpc_started: any
     rpc_queue_wait: any
 
     # provider / key 动态的保留原 metric
     rpc_completed: any
+    
     rpc_failed: any
     rpc_latency: any
+    rpc_key_unavailable: any
 
-    # no-label gauges
+    # range registry
     rpc_queue_size: any
     rpc_inflight: any
-    
+    range_inflight: any
+    max_range_inflight: any
     
     # ===== RPC helpers =====
     def rpc_submitted_inc(self):
         self.rpc_submitted.inc()
+
+    def rpc_finished_inc(self):
+        self.rpc_finished.inc()
 
     def rpc_started_inc(self):
         self.rpc_started.inc()
@@ -83,6 +90,21 @@ class MetricsContext:
     def rpc_queue_size_set(self, value_num: float):
         self.rpc_queue_size.set(value_num)
 
+    def rpc_key_unavailable_inc(self, key: str):
+        self.rpc_key_unavailable.labels(
+            chain=self.chain,
+            job=self.job,
+            key=key,
+        ).inc()
+        
+    # range registry
+    def range_inflight_set(self, value_num: float):
+        self.range_inflight.set(value_num)
+
+    def max_range_inflight_set(self, value_num: float):
+        self.max_range_inflight.set(value_num)
+
+
     @classmethod
     def from_env(cls) -> "MetricsContext":
         chain = os.getenv("CHAIN", "unknown")
@@ -114,6 +136,7 @@ class MetricsContext:
 
             # RPC（固定 labels）
             rpc_submitted=m.RPC_SUBMITTED.labels(**base),
+            rpc_finished=m.RPC_FINISHED.labels(**base),
             rpc_started=m.RPC_STARTED.labels(**base),
             rpc_queue_wait=m.RPC_QUEUE_WAIT.labels(**base),
             rpc_queue_size=m.RPC_QUEUE_SIZE.labels(**base),
@@ -123,7 +146,11 @@ class MetricsContext:
             rpc_completed=m.RPC_COMPLETED,
             rpc_failed=m.RPC_FAILED,
             rpc_latency=m.RPC_LATENCY,
+            rpc_key_unavailable=m.RPC_KEY_UNAVAILABLE,
             
+            # range registry
+            range_inflight=m.RANGE_INFLIGHT.labels(**base),
+            max_range_inflight=m.MAX_RANGE_INFLIGHT.labels(**base),
         )
 
     # ---------- Helper ----------

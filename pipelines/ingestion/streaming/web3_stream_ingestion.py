@@ -47,7 +47,7 @@ BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction 
 # -----------------------------
 # Kafka Config
 # -----------------------------
-TRANSACTIONAL_ID = f"blockchain.ingestion.{CHAIN}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+TRANSACTIONAL_ID = f"blockchain.ingestion.{JOB_NAME}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
@@ -64,6 +64,7 @@ rpc_pool = RpcPool.from_config(rpc_configs, CHAIN)
 # -----------------------------
 blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
 producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
+
 
 
 async def submit_range(scheduler, registry, r):
@@ -92,11 +93,16 @@ async def stream_ingest_logs(
     range_size: int,
     rpc_pool,
     producer,
-    max_inflight_ranges: int = 20,
+    max_inflight_ranges: int = MAX_INFLIGHT_RANGE,
 ):
+    # -----------------------------
     # Init metrics
+    # -----------------------------
+    metrics_context = MetricsContext.from_env()
+    set_current_metrics(metrics_context)
     metrics = get_metrics()
     
+    metrics.max_range_inflight_set(MAX_INFLIGHT_RANGE)
     # -----------------------------
     # RPC infra
     # -----------------------------
@@ -115,7 +121,7 @@ async def stream_ingest_logs(
     # -----------------------------
     planner = RangePlanner(start_block, range_size)
     registry = RangeRegistry()
-    
+
     # -----------------------------
     # Ordering
     # -----------------------------
@@ -179,14 +185,16 @@ async def stream_ingest_logs(
                 )
 
                 log.warning(
-                    "❌rpc_range_failed",
+                    "❌ rpc_range_failed",
                     extra={
                         "range_id": range_id,
                         "retry": registry.get(range_id).retry,
                         "rpc": result.rpc or "UNKNOWN",
+                        "key_env": result.key_env or "UNKNOWN",
                         "error": str(result.error),
                     },
                 )
+                
                 # 重新提交该 range（换 RPC）
                 if retry_ok:
                     r = registry.get(range_id)
@@ -259,9 +267,6 @@ async def stream_ingest_logs(
                     producer.poll(0)
 
 
-                
-                
-                
                 # -----------------------------------------
                 # commit checkpoint（range 级）
                 # -----------------------------------------
@@ -344,8 +349,7 @@ async def stream_ingest_logs(
 # Entrypoint
 async def main():
     
-    metrics = MetricsContext.from_env()
-    set_current_metrics(metrics)
+
 
     last_state = load_last_state(
         job_name=JOB_NAME,

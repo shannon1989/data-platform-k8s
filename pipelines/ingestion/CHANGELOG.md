@@ -125,9 +125,10 @@
 ## [1.0.2] - 2026-01-26
 ### Changed
 - Add metrics: range_inflight - 是否长期贴近 max_inflight_ranges
-- rpc_queue_utilization - 队列是否溢出风险
-- rpc_inflight_utilization - 利用率视角
-- rpc_key_unavailable - Time 维度是否成为瓶颈的“真相指标”
+- Add metircs: backlog = rpc_submitted - rpc_finished
+- Add metrics: rpc_key_unavailable_total (RPC key unavailable due to key_interval) - Time 维度是否成为瓶颈的“真相指标”
+- Add metircs: Total RPC finished (success or error) 
+- Add cooldown / Circuit Breaker / Half-Open
 
 ## [1.0.3] - 2026-01-27
 ### Changed

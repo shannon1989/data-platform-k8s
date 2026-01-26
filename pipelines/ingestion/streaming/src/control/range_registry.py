@@ -1,6 +1,15 @@
 from .range_record import RangeRecord
 from .range_status import RangeStatus
 
+from src.metrics.runtime import get_metrics
+
+_m = None
+def m():
+    global _m
+    if _m is None:
+        _m = get_metrics()
+    return _m
+
 # -------------------------
 # single source of truth”
 # 生命周期管理器
@@ -46,12 +55,14 @@ class RangeRegistry:
         r.status = RangeStatus.INFLIGHT
         r.last_task_id = task_id
         r.touch()
+        self._refresh_metrics()
 
     def mark_done(self, range_id: int):
         r = self.get(range_id)
         r.status = RangeStatus.DONE
         r.touch()
         self._ranges.pop(range_id, None)
+        self._refresh_metrics()
 
     def mark_failed(self, range_id: int, error: str):
         r = self.get(range_id)
@@ -59,7 +70,7 @@ class RangeRegistry:
         r.last_error = error
         r.touch()
         self._ranges.pop(range_id, None)
-
+        self._refresh_metrics()
     # -------------------------
     # retry logic
     # -------------------------
@@ -78,6 +89,7 @@ class RangeRegistry:
             return False
 
         r.status = RangeStatus.RETRYING
+        self._refresh_metrics()
         return True
 
     # -------------------------
@@ -91,3 +103,19 @@ class RangeRegistry:
             r for r in self._ranges.values()
             if r.status not in (RangeStatus.DONE, RangeStatus.FAILED)
         ]
+        
+    # 增加一个 统一刷新指标的方法
+    def _refresh_metrics(self):
+        inflight = 0
+        retrying = 0
+        active = 0
+
+        for r in self._ranges.values():
+            if r.status == RangeStatus.INFLIGHT:
+                inflight += 1
+            if r.status == RangeStatus.RETRYING:
+                retrying += 1
+            if r.status not in (RangeStatus.DONE, RangeStatus.FAILED):
+                active += 1
+
+        m().range_inflight_set(inflight)

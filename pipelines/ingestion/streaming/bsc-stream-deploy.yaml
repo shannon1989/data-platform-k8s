@@ -11,8 +11,9 @@ metadata:
     
 spec:
   replicas: 1
-  # strategy:
-  #   type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）
+  strategy:
+    type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod
+    #  kill old takes time and ingestion continus while the pod is in terminating status, ingestion paused for 1 sec only
   selector:
     matchLabels:
       app: logs-ingestion
@@ -27,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.0.1
+          image: web3-stream-ingestion:1.0.2
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_stream_ingestion.py"]
 

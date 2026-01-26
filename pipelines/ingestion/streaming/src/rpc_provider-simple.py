@@ -128,7 +128,7 @@ class AsyncRpcClient:
 
         if "error" in data:
             code = data["error"].get("code")
-            if code in (-32005, -32016, -32000, 10007):
+            if code in (-32005, -32016, -32000):
                 raise RpcRateLimitError(data["error"])
             raise RuntimeError(data["error"])
 
@@ -156,7 +156,6 @@ class RpcKeySlot:
         async with self._lock:
             now = time.monotonic()
             if now < self._next_available:
-                m().rpc_key_unavailable_inc(self.key_env)
                 raise RpcKeyUnavailable(self.key_env)
 
             self._next_available = now + self.min_interval
@@ -170,13 +169,7 @@ class RpcProvider:
         self.name = name
         self.base_url = base_url
         self.weight = weight
-        
-        # Circuit breaker state
         self.cooldown_until = 0.0
-        self.fail_count = 0
-        self.fail_threshold = 3           # 连续失败 3 次触发熔断, 避免偶发网络抖动
-        self.cooldown_sec = 10            # 熔断冷却时间
-        self.half_open_probe = False      # HALF_OPEN 探测锁, 确保冷却后只有一个请求能试探
 
         # normalize key_envs: None | str | list -> list
         if not key_envs:
@@ -194,55 +187,7 @@ class RpcProvider:
         self._rr = 0
 
     def available(self):
-        now = time.monotonic()
-
-        # OPEN 状态：还在冷却
-        if now < self.cooldown_until:
-            return False
-
-        # 冷却结束 → HALF_OPEN
-        if self.cooldown_until > 0 and not self.half_open_probe:
-            log.info(
-                "⚠️ rpc_half_open_probe",
-                extra={
-                    "rpc": self.name,
-                },
-            )
-            self.half_open_probe = True
-            return True
-
-        # CLOSED 或 HALF_OPEN 已被占用
-        return self.cooldown_until == 0
-
-    def on_success(self):
-        # HALF_OPEN 成功 → CLOSED
-        self.fail_count = 0
-        self.cooldown_until = 0.0
-        self.half_open_probe = False
-
-    def on_failure(self, cooldown: float | None = None):
-        self.fail_count += 1
-
-        if self.fail_count >= self.fail_threshold:
-            cd = cooldown or self.cooldown_sec
-            self.cooldown_until = time.monotonic() + cd
-            self.half_open_probe = False
-            log.warning(
-                "⚠️ rpc_circuit_open",
-                extra={
-                    "rpc": self.name,
-                    "cooldown_sec": cd,
-                    "fail_count": self.fail_count,
-                },
-            )
-
-
-    def on_half_open_failure(self):
-        # HALF_OPEN 探测失败 → 立刻回 OPEN
-        self.cooldown_until = time.monotonic() + self.cooldown_sec
-        self.half_open_probe = False
-        
-        
+        return time.monotonic() >= self.cooldown_until
 
     async def acquire_slot(self):
         if not self.slots:
@@ -334,30 +279,16 @@ class Web3AsyncRouter:
 
             try:
                 result, trace = await self.client.call(url, method, params)
-                
-                p.on_success()
+                # p.reward()
                 return result, p.name, key_env, trace
 
-            except RpcRateLimitError as e:
-                p.on_failure(cooldown=30)   # 强熔断
+            except RpcRateLimitError:
+                # p.cooldown(10)
                 raise
 
-            except (TimeoutError, asyncio.TimeoutError):
-                p.on_failure()              # 计数，但不拉长 cooldown
-                raise
-
-            except RuntimeError as e:
-                # code == 19 / temporary error → 不熔断
-                log.warning("rpc_transient_error")
-                raise
-
-            except Exception as e:
+            except Exception:
+                # p.cooldown(5)
                 m().rpc_failed_inc(provider=p.name, key=key_env)
-
-                if p.half_open_probe:
-                    p.on_half_open_failure()
-                else:
-                    p.on_failure()
                 raise
 
         raise RpcTemporarilyUnavailable()
@@ -369,7 +300,7 @@ class Web3AsyncRouter:
             []
         )
         log.info(
-            "📦 get_latest_block",
+            "📦get_latest_block",
             extra={
                 "rpc": rpc,
                 "key_env": key_env,
@@ -470,7 +401,7 @@ class AsyncRpcScheduler:
 
     async def _execute_rpc(self, method, params, fut, meta, wid):
         async with self.inflight:
-            # rpc_start_ts = time.time()
+            rpc_start_ts = time.time()
 
             m().rpc_started.inc()
             m().rpc_inflight.inc()
@@ -536,7 +467,6 @@ class AsyncRpcScheduler:
                     )
             finally:
                 m().rpc_inflight.dec()
-                m().rpc_finished_inc()
 
 
     async def close(self):

@@ -100,6 +100,12 @@ RPC_STARTED = Counter(
     ["chain", "job"]
 )
 
+RPC_FINISHED = Counter(
+    "rpc_finished_total",
+    "Total RPC finished (success or error)",
+    ["chain", "job"]
+)
+
 RPC_COMPLETED = Counter(
     "rpc_completed_total",
     "Total RPC requests completed successfully",
@@ -134,8 +140,30 @@ RPC_LATENCY = Histogram(
 )
 
 RPC_QUEUE_WAIT = Histogram(
-    "rpc_queue_wait_seconds",
+    "rpc_queue_wait_ms",
     "RPC queue wait time",
     ["chain", "job"],
-    buckets=(0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 50),
+    buckets=(0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500),
+)
+
+
+RPC_KEY_UNAVAILABLE = Counter(
+    "rpc_key_unavailable_total",
+    "RPC key unavailable due to key_interval",
+    ["chain", "job", "key"]
+)
+
+
+# range_registry.py metrics
+# 当前未完成 range 数
+RANGE_INFLIGHT = Gauge(
+    "range_inflight",
+    "Number of block ranges currently in flight",
+    ["chain", "job"]
+)
+
+MAX_RANGE_INFLIGHT = Gauge(
+    "max_range_inflight",
+    "Max number of block ranges currently in unfinished status",
+    ["chain", "job"]
 )
