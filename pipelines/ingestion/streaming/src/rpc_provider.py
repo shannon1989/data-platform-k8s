@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import NamedTuple
 import itertools
 from src.logging import log
-
+from src.web3_utils import build_method_group_map
 from src.metrics.runtime import get_metrics
 
 _m = None
@@ -242,7 +242,6 @@ class RpcProvider:
         self.cooldown_until = time.monotonic() + self.cooldown_sec
         self.half_open_probe = False
         
-        
 
     async def acquire_slot(self):
         if not self.slots:
@@ -283,45 +282,67 @@ class RpcPool:
         return candidates
     
     @classmethod
-    def from_config(cls, rpc_configs: dict, chain: str) -> "RpcPool":
-        chain_cfg = rpc_configs.get("chains", {}).get(chain)
-        if not chain_cfg:
-            raise RuntimeError(f"Chain config not found: {chain}")
-
-        providers = []
+    def grouped_from_config(cls, rpc_configs: dict, chain: str) -> "GroupedRpcPool":
+        chain_cfg = rpc_configs["chains"][chain]
+    
+        method_group_map = build_method_group_map(chain_cfg)
+    
+        pools: dict[str, RpcPool] = {}
+    
         for cfg in chain_cfg.get("providers", []):
             if not cfg.get("enabled", True):
                 continue
-            providers.append(RpcProvider(
-                name=cfg["name"],
-                base_url=cfg["base_url"],
-                weight=int(cfg.get("weight", 1)),
-                key_envs=cfg.get("api_key_env"),
-            ))
+    
+            groups = cfg.get("method_groups", [])
+            if isinstance(groups, str):
+                groups = [groups]
+    
+            for g in groups:
+                pools.setdefault(g, []).append(
+                    RpcProvider(
+                        name=cfg["name"],
+                        base_url=cfg["base_url"],
+                        weight=int(cfg.get("weight", 1)),
+                        key_envs=cfg.get("api_keys_env"),
+                        key_interval=float(cfg.get("key_interval", 1.0)),
+                    )
+                )
+    
+        rpc_pools = {
+            g: RpcPool(providers)
+            for g, providers in pools.items()
+        }
+    
+        return GroupedRpcPool(rpc_pools, method_group_map)
 
-        if not providers:
-            raise RuntimeError(f"No RPC providers enabled for chain: {chain}")
 
-        for p in providers:
-            log.info(
-                "rpc_enabled",
-                extra={
-                    "chain": chain,
-                    "rpc": p.name,
-                    "key_envs": p.key_envs if p.key_envs else ["public"],
-                    "weight": p.weight,
-                },
-            )
+# 按 method_group 构建多个 RpcPool
+class GroupedRpcPool:
+    def __init__(self, pools: dict[str, RpcPool], method_group_map: dict[str, str]):
+        self.pools = pools
+        self.method_group_map = method_group_map
 
-        return cls(providers)
+    def pool_for_method(self, method: str) -> RpcPool:
+        group = self.method_group_map.get(method)
+        if not group:
+            log.warning("method_group_not_found", extra={"method": method})
+            group = "heavy"
+
+        pool = self.pools.get(group)
+        if not pool:
+            raise RuntimeError(f"No RPC pool for method_group: {group}")
+
+        return pool
+
 
 class Web3AsyncRouter:
-    def __init__(self, rpc_pool, client):
-        self.rpc_pool = rpc_pool
+    def __init__(self, grouped_pool: GroupedRpcPool, client):
+        self.grouped_pool = grouped_pool
         self.client = client
 
     async def call_once(self, method, params):
-        providers = self.rpc_pool.pick_providers()
+        pool = self.grouped_pool.pool_for_method(method)
+        providers = pool.pick_providers()
 
         for p in providers:
             if not p.available():
@@ -340,24 +361,40 @@ class Web3AsyncRouter:
 
             except RpcRateLimitError as e:
                 p.on_failure(cooldown=30)   # 强熔断
-                raise
+                continue   # 尝试下一个 provider
 
             except (TimeoutError, asyncio.TimeoutError):
                 p.on_failure()              # 计数，但不拉长 cooldown
-                raise
+                continue   # 尝试下一个 provider
 
-            except RuntimeError as e:
-                # code == 19 / temporary error → 不熔断
-                log.warning("rpc_transient_error")
-                raise
+            # except RuntimeError as e:
+            #     # code == 19 / temporary error → 弱熔断
+                
+            #     p.on_failure(cooldown=10)   # 冷却10s
+            #     log.warning("⚠️ rpc_runtime_error",
+            #             extra={
+            #             "provider":p.name,
+            #             "key": key_env,
+            #             "error_type": type(e).__name__,
+            #             "error": str(e)},
+            #             )
+            #     raise
 
             except Exception as e:
                 m().rpc_failed_inc(provider=p.name, key=key_env)
-
+                
+                log.warning("⚠️ rpc_call_error",
+                        extra={
+                        "provider":p.name,
+                        "key": key_env,
+                        "error_type": type(e).__name__,
+                        "error": str(e)},
+                        )
+                
                 if p.half_open_probe:
                     p.on_half_open_failure()
                 else:
-                    p.on_failure()
+                    p.on_failure(cooldown=10) # 冷却10s
                 raise
 
         raise RpcTemporarilyUnavailable()
@@ -514,15 +551,15 @@ class AsyncRpcScheduler:
                 # )
 
             except Exception as e:
-                log.warning(
-                    "⚠️ rpc_call_error",
-                    extra={
-                        "task_id": meta.task_id,
-                        # "worker": wid,
-                        "error_type": type(e).__name__,
-                        "error": str(e),
-                    },
-                )
+                # log.warning(
+                #     "⚠️ rpc_call_error",
+                #     extra={
+                #         "task_id": meta.task_id,
+                #         # "worker": wid,
+                #         "error_type": type(e).__name__,
+                #         "error": str(e),
+                #     },
+                # )
             
                 if not fut.done():
                     fut.set_result(

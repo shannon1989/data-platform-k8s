@@ -2,35 +2,59 @@ import os
 import json
 import uuid
 import asyncio
+import socket
 from confluent_kafka.serialization import SerializationContext, MessageField
 from prometheus_client import start_http_server
 
+from src import RangeResult, RangeRegistry, TailingRangePlanner, OrderedResultBuffer
 from src.logging import log
 from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.state import load_last_state
 from src.kafka_utils import init_producer, get_serializers
 from src.web3_utils import current_utctime
-from src import RangeResult, RangeRegistry, RangePlanner, OrderedResultBuffer, LatestBlockTracker
 from src.metrics import MetricsContext
 from src.metrics.runtime import set_current_metrics, get_metrics
+from src.ingestion import stream_ingest_logs
+from src.tracking import LatestBlockTracker
+
 # -----------------------------
 # Environment Variables
 # -----------------------------
 RUN_ID = os.getenv("RUN_ID", str(uuid.uuid4()))
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # can be decimals
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # refresh interval of latest block number
 CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
-RESUME_FROM_LAST = os.getenv("RESUME_FROM_LAST", "True").lower() in ("1", "true", "yes")
+# RESUME_MODE = (os.getenv("RESUME_MODE") or "").lower()# chain_head or checkpoint
 
+# ALLOWED_RESUME_MODES = {"chain_head", "checkpoint"}
+# if RESUME_MODE not in ALLOWED_RESUME_MODES:
+#     raise RuntimeError(
+#         f"🔥 RESUME_MODE must be one of {sorted(ALLOWED_RESUME_MODES)}"
+#     )
 
 # -----------------------------
-# Job Name & Kafka IDs
+# Kafka
 # -----------------------------
-if RESUME_FROM_LAST:
-    JOB_NAME = f"{CHAIN}_backfill_resume"        # 固定名，Kafka checkpoint 能被复用
-    JOB_MODE = "resume"
-else:
-    JOB_NAME = f"{CHAIN}_realtime_{current_utctime()}"  # 每次唯一，从最新block开始
-    JOB_MODE = "realtime"
+JOB_NAME = f"{CHAIN}_realtime_chain_head"
+
+INSTANCE_ID = (os.getenv("POD_NAME") or f"{socket.gethostname()}-{os.getpid()}")
+# TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+TRANSACTIONAL_ID = f"blockchain.ingestion.{JOB_NAME}.{INSTANCE_ID}"
+KAFKA_BROKER = "redpanda.kafka.svc:9092"
+SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
+BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
+STATE_TOPIC = f"blockchain.state.{CHAIN}"
+
+# if RESUME_MODE == "checkpoint":
+#     JOB_NAME = f"{CHAIN}_realtime_resume"        # 固定名，Kafka checkpoint 能被复用
+#     JOB_MODE = "resume"
+# else:
+#     JOB_NAME = f"{CHAIN}_realtime_{current_utctime()}"  # 每次唯一，从最新block开始
+#     JOB_MODE = "realtime"
+
+
+# resume_mode = "chain_head"
+# resume_mode = "checkpoint"
+# JOB_NAME = f"{CHAIN}_resume_from_{resume_mode}"
 
 # -----------------------------
 # RPC Config
@@ -44,21 +68,11 @@ MAX_INFLIGHT_RANGE = int(os.getenv("MAX_INFLIGHT_RANGE", "20"))
 # -----------------------------
 RANGE_SIZE = int(os.getenv("RANGE_SIZE", "5")) # how many blocks of range to fetch for logs
 BATCH_TX_SIZE = int(os.getenv("BATCH_TX_SIZE", "5"))  # Max 10 logs transaction per batch within a single block
-
-# -----------------------------
-# Kafka Config
-# -----------------------------
-TRANSACTIONAL_ID = f"blockchain.ingestion.{JOB_NAME}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
-KAFKA_BROKER = "redpanda.kafka.svc:9092"
-SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
-BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
-STATE_TOPIC = f"blockchain.state.{CHAIN}"
-
 # -----------------------------
 # RPC Initilization
 # -----------------------------
 rpc_configs = json.load(open(RPC_CONFIG_PATH))
-rpc_pool = RpcPool.from_config(rpc_configs, CHAIN)
+rpc_pool = RpcPool.grouped_from_config(rpc_configs, CHAIN)
 
 # -----------------------------
 # Kafka Producer initialization
@@ -66,6 +80,9 @@ rpc_pool = RpcPool.from_config(rpc_configs, CHAIN)
 blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
 producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
+# -----------------------------
+# submit range
+# -----------------------------
 async def submit_range(scheduler, registry, r):
     task = asyncio.create_task(
         scheduler.submit(
@@ -86,10 +103,10 @@ async def submit_range(scheduler, registry, r):
     registry.mark_inflight(r.range_id, task_id=id(task))
     return task
 
+
 async def stream_ingest_logs(
     *,
-    start_block: int,
-    range_size: int,
+    planner,
     rpc_pool,
     producer,
     max_inflight_ranges: int = MAX_INFLIGHT_RANGE,
@@ -99,12 +116,10 @@ async def stream_ingest_logs(
     # -----------------------------
     metrics_context = MetricsContext.from_env()
     set_current_metrics(metrics_context)
-    metrics = get_metrics()
-    
-    # init planner_exhausted
-    planner_exhausted = False
+    metrics = get_metrics() 
     
     metrics.max_range_inflight_set(MAX_INFLIGHT_RANGE)
+    
     # -----------------------------
     # RPC infra
     # -----------------------------
@@ -119,25 +134,17 @@ async def stream_ingest_logs(
     )
 
     # -----------------------------
-    # Control plane
+    # Control plane / Ordering / Inflight Window
     # -----------------------------
-    planner = RangePlanner(start_block, range_size)
+    # planner = TailingRangePlanner(start_block, range_size)
     registry = RangeRegistry()
-
-    # -----------------------------
-    # Ordering
-    # -----------------------------
     ordered_buffer = OrderedResultBuffer()
-
-    # -----------------------------
-    # Inflight window
-    # -----------------------------
     inflight: set[asyncio.Task] = set()
 
     # -----------------------------
     # Pre-fill inflight window
     # -----------------------------
-    latest_tracker = LatestBlockTracker(router, refresh_interval=2.0)
+    latest_tracker = LatestBlockTracker(router, refresh_interval=POLL_INTERVAL)
     latest_tracker.start()
 
     while True:
@@ -153,17 +160,29 @@ async def stream_ingest_logs(
         if not r:
             break
         
-        rr = registry.register(
-            r.range_id,
-            r.start_block,
-            r.end_block,
-        )
+        rr = registry.register(r.range_id, r.start_block, r.end_block)
         inflight.add(await submit_range(scheduler, registry, rr))
         
     # -----------------------------
-    # 主 streaming loop
+    # Main streaming loop
     # -----------------------------
-    while inflight:
+    while True:
+        if not inflight:
+            # realtime idle waiting
+            await asyncio.sleep(0.2)
+            latest_block = latest_tracker.get_cached()
+            
+            # refill
+            if latest_block is not None:
+                while len(inflight) < max_inflight_ranges:
+                    r = planner.next_range(latest_block)
+                    if not r:
+                        break
+                    rr = registry.register(r.range_id, r.start_block, r.end_block)
+                    inflight.add(await submit_range(scheduler, registry, rr))
+            continue
+
+        
         done, _ = await asyncio.wait(
             inflight,
             return_when=asyncio.FIRST_COMPLETED,
@@ -270,13 +289,13 @@ async def stream_ingest_logs(
 
 
                 # -----------------------------------------
-                # commit checkpoint（range 级）
+                # commit checkpoint（range-level）
                 # -----------------------------------------
                 last_committed_block = rr.end_block
                 
                 state_record = {
                     "job_name": JOB_NAME,
-                    "run_id": f"{RUN_ID}-task-{rr.task_id}-range-{rr.range_id}",
+                    "run_id": f"{RUN_ID}",
                     "range": {
                         "start": rr.start_block,
                         "end": rr.end_block,
@@ -326,33 +345,37 @@ async def stream_ingest_logs(
                     metrics.checkpoint_lag.set(max(0, latest_block - last_committed_block))
             
             # -----------------------------------------
-            # 下游释放 → 上游补位（严格受 registry 控制）
+            # Refill inflight window
             # -----------------------------------------
             latest_block = latest_tracker.get_cached()
             
             if latest_block is not None:
                 while len(inflight) < max_inflight_ranges:
                     r = planner.next_range(latest_block)
-                    if not r:
+                    if not r:                     
                         break
+                    
                     rr = registry.register(
                         r.range_id,
                         r.start_block,
                         r.end_block,
                     )
                     inflight.add(await submit_range(scheduler, registry, rr))
-
+                    
     # -----------------------------
-    # shutdown
+    # Graceful shutdown
     # -----------------------------
+    producer.flush(10)
     await scheduler.close()
     await latest_tracker.stop()
+
 
 # Entrypoint
 async def main():
     
-
-
+    # -----------------------------
+    # Try load checkpoint from Kafka state topic
+    # -----------------------------
     last_state = load_last_state(
         job_name=JOB_NAME,
         kafka_broker=KAFKA_BROKER,
@@ -360,21 +383,47 @@ async def main():
         schema_registry_url=SCHEMA_REGISTRY_URL,
     )
 
-    last_block = last_state["checkpoint"]
-    
+    start_block = None
+
+    if last_state and last_state.get("checkpoint") is not None:
+        # ✅ 正常 resume
+        start_block = last_state["checkpoint"] + 1
+        job_name = JOB_NAME
+
+    else:
+        # 🆕 state 不存在 → 从链最新 block 开始
+        log.warning(
+            "⚠️ no_checkpoint_found_fallback_to_chain_head",
+            extra={"job": JOB_NAME, "chain": CHAIN},
+        )
+
+        client = AsyncRpcClient(timeout=RPC_MAX_TIMEOUT)
+        router = Web3AsyncRouter(rpc_pool, client)
+
+        latest_block, rpc, key_env, meta = await router.call("eth_blockNumber", [])
+        if isinstance(latest_block, str):
+            latest_block = int(latest_block, 16)
+
+        start_block = latest_block
+        job_name = f"{JOB_NAME}_{latest_block}"
+
+
     log.info(
         "▶️job_start",
         extra={
             "chain": CHAIN,
-            "job": JOB_NAME,
+            "job": job_name,
             "range_size": RANGE_SIZE,
             "log_size" : BATCH_TX_SIZE,
-            "start_block": last_block + 1,
+            "start_block": start_block,
+            "resume_mode": RESUME_MODE
         },
     )
-
-    await stream_ingest_logs(start_block=last_block + 1,
-        range_size=RANGE_SIZE,
+    
+    planner = TailingRangePlanner(start_block, RANGE_SIZE)
+    
+    await stream_ingest_logs(
+        planner=planner,
         rpc_pool=rpc_pool,
         producer=producer)
 

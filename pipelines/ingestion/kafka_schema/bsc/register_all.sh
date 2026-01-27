@@ -16,7 +16,8 @@ register () {
   | jq
 }
 
-register blockchain.logs.bsc-key blockchain.logs.bsc-key.avsc
-register blockchain.logs.bsc-value blockchain.logs.bsc-value.avsc
-register blockchain.state.bsc-key blockchain.state.bsc-key.avsc
-register blockchain.state.bsc-value blockchain.state.bsc-value.avsc
+
+register blockchain.ingestion.bsc.logs-key blockchain.logs.bsc-key.avsc
+register blockchain.ingestion.bsc.logs-value blockchain.logs.bsc-value.avsc
+register blockchain.ingestion.bsc.state-key blockchain.state.bsc-key.avsc
+register blockchain.ingestion.bsc.state-value blockchain.state.bsc-value.avsc

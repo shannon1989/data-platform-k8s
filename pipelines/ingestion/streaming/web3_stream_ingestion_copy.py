@@ -66,6 +66,8 @@ rpc_pool = RpcPool.from_config(rpc_configs, CHAIN)
 blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
 producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
+
+
 async def submit_range(scheduler, registry, r):
     task = asyncio.create_task(
         scheduler.submit(
@@ -101,9 +103,6 @@ async def stream_ingest_logs(
     set_current_metrics(metrics_context)
     metrics = get_metrics()
     
-    # init planner_exhausted
-    planner_exhausted = False
-    
     metrics.max_range_inflight_set(MAX_INFLIGHT_RANGE)
     # -----------------------------
     # RPC infra
@@ -135,7 +134,7 @@ async def stream_ingest_logs(
     inflight: set[asyncio.Task] = set()
 
     # -----------------------------
-    # Pre-fill inflight window
+    # 预填满滑动窗口
     # -----------------------------
     latest_tracker = LatestBlockTracker(router, refresh_interval=2.0)
     latest_tracker.start()

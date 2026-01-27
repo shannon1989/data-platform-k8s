@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "BlockKey",
-  "namespace": "blockchain.logs",
+  "namespace": "blockchain.ingestion.logs",
   "doc": "Raw blockchain log from eth_getLogs",
   "fields": [
     {

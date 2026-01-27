@@ -130,12 +130,20 @@
 - Add metircs: Total RPC finished (success or error) 
 - Add cooldown / Circuit Breaker / Half-Open
 
-## [1.0.3] - 2026-01-27
+## [1.0.3/1.0.4] - 2026-01-27
 ### Changed
-- Design and implement backfill 
-  - backfill with time (2026-01-01 10:30:00 - 2026-01-01 11:30:00)
-  - backfill with date (2026-01-01 to 2026-01-01) = [2026-01-01 00:00:00, 2026-01-01 00:00:00)
-  - Backfill with block (73577112 to 73578112)
+- Add realtime mode (resume_mod = "chain_head") : ingest from latest block onwards
+- Add realtime mode (resume_mod = "checkpoint") : ingest from latest checkpoint
+- Add safe latest chain head function: LatestBlockTracker
+- Add methods_group in configMap. 
+    - eth_blockNumber -> light method (public RPC)
+    - eth_getLogs -> heavy method (private RPC)
+- Kafka transactional_id issue fix - using POD_NAME
+- Split realtime resume mode (resume from chain-head / resume from checkpoint - backfill mode)
+
+## [1.0.5] - 2026-01-28
+### Changed
+  - 
 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)

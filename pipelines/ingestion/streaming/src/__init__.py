@@ -5,7 +5,7 @@ from src.control.range_registry import RangeRegistry
 
 # planning
 from src.planning.block_range import BlockRange
-from src.planning.range_planner import RangePlanner
+from src.planning.range_planner import TailingRangePlanner,BoundedRangePlanner
 
 # execution
 from src.execution.range_result import RangeResult
@@ -22,7 +22,8 @@ __all__ = [
 
     # planning
     "BlockRange",
-    "RangePlanner",
+    "TailingRangePlanner",
+    "BoundedRangePlanner",
 
     # execution
     "RangeResult",
