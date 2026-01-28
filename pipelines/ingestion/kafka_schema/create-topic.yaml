@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-eth-state-topic
+  namespace: kafka
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: kafka-client
+        image: quay.io/strimzi/kafka:0.49.1-kafka-4.1.1
+        # kafka-topics.sh path is different in Strimzi images
+        command:
+          - sh
+          - -c
+          - |
+            /opt/kafka/bin/kafka-topics.sh --create \
+              --topic eth-ingestion-state \
+              --bootstrap-server kafka-kafka-bootstrap.kafka.svc.cluster.local:9092 \
+              --partitions 3 \
+              --replication-factor 1 \
+              --config cleanup.policy=compact || true

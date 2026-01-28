@@ -13,6 +13,7 @@ from src.kafka_utils import init_producer, get_serializers
 from src.web3_utils import current_utctime
 from src.metrics import MetricsContext
 from src.metrics.runtime import set_current_metrics, get_metrics
+from src.ingestion import stream_ingest_logs
 from src.tracking import LatestBlockTracker
 
 # -----------------------------
@@ -32,10 +33,8 @@ INSTANCE_ID = (os.getenv("POD_NAME") or f"{socket.gethostname()}-{os.getpid()}")
 TRANSACTIONAL_ID = f"blockchain.ingestion.{JOB_NAME}.{INSTANCE_ID}"
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
-BLOCKS_TOPIC = f"blockchain.ingestion.{CHAIN}.blocks.raw"
-LOGS_TOPIC = f"blockchain.ingestion.{CHAIN}.logs.raw"
-TXS_TOPIC = f"blockchain.ingestion.{CHAIN}.transactions.raw"
-STATE_TOPIC = f"blockchain.ingestion.{CHAIN}._state"
+BLOCKS_TOPIC = f"blockchain.logs.{CHAIN}"
+STATE_TOPIC = f"blockchain.state.{CHAIN}"
 
 # -----------------------------
 # RPC Config
@@ -85,7 +84,7 @@ async def submit_range(scheduler, registry, r):
     return task
 
 
-async def run_stream_ingest(
+async def stream_ingest_logs(
     *,
     planner,
     rpc_pool,
@@ -224,12 +223,9 @@ async def run_stream_ingest(
             ready_ranges = ordered_buffer.pop_ready()
 
             for rr in ready_ranges:
-                # ===== Kafka EOS =====
+                # ===== Kafka EOS 写入 =====
                 producer.begin_transaction()
 
-                # -----------------------------
-                # produce logs
-                # -----------------------------
                 logs_by_block = {}
                 for log_item in rr.logs:
                     bn = log_item.get("blockNumber")
@@ -247,7 +243,7 @@ async def run_stream_ingest(
                     
                     for idx, tx in enumerate(txs):
                         
-                        log_record = {
+                        tx_record = {
                             "block_height": bn,
                             "job_name": job_name,
                             "run_id": RUN_ID,
@@ -257,97 +253,20 @@ async def run_stream_ingest(
                         }
                         
                         producer.produce(
-                            topic=LOGS_TOPIC,
+                            topic=BLOCKS_TOPIC,
                             key=f"{bn}-{idx}",
                             value=blocks_value_serializer(
-                                log_record,
+                                tx_record,
                                 SerializationContext(
-                                    LOGS_TOPIC, MessageField.VALUE
+                                    BLOCKS_TOPIC, MessageField.VALUE
                                 ),
                             ),
                         )
                     producer.poll(0)
-                    
-                # -----------------------------
-                # produce Blocks
-                # -----------------------------
-                blocks_by_bn = {}
-                txs_by_bn = {}
 
-                for bn in range(rr.start_block, rr.end_block + 1):
-                    block, rpc, key_env, *_ = await router.call_once(
-                        "eth_getBlockByNumber",
-                        [hex(bn), True],
-                    )
-
-                    if not block:
-                        raise
-
-                    # blockHash 注入到 tx
-                    block_hash = block["hash"]
-
-                    blocks_by_bn[bn] = block
-
-                    txs = []
-                    for tx in block.get("transactions", []):
-                        tx["blockHash"] = block_hash
-                        txs.append(tx)
-
-                    txs_by_bn[bn] = txs
-
-
-                for bn, block in blocks_by_bn.items():
-                    block_record = {
-                        "block_height": bn,
-                        "job_name": job_name,
-                        "run_id": RUN_ID,
-                        "inserted_at": current_utctime(),
-                        "raw": json.dumps(block),
-                    }
-
-                    producer.produce(
-                        topic=BLOCKS_TOPIC,
-                        key=bn,
-                        value=blocks_value_serializer(
-                            block_record,
-                            SerializationContext(
-                                BLOCKS_TOPIC, MessageField.VALUE
-                            ),
-                        ),
-                    )
-                    producer.poll(0)
-                
-                # -----------------------------
-                # produce transactions
-                # -----------------------------
-                for bn, txs in txs_by_bn.items():
-                    for idx, tx in enumerate(txs):
-                        txs_record = {
-                            "block_height": bn,
-                            "tx_hash": tx["hash"],
-                            "job_name": job_name,
-                            "run_id": RUN_ID,
-                            "inserted_at": current_utctime(),
-                            "raw": json.dumps(tx),
-                            "tx_index": idx,
-                        }
-
-                        producer.produce(
-                            topic=TXS_TOPIC,
-                            key=tx["hash"],
-                            value=blocks_value_serializer(
-                            txs_record,
-                            SerializationContext(
-                                TXS_TOPIC, MessageField.VALUE
-                            ),
-                        ),
-                        )
-
-                    producer.poll(0)
-                    
-                # -----------------------------
+                # -----------------------------------------
                 # commit checkpoint（range-level）
-                # -----------------------------
+                # -----------------------------------------
                 last_committed_block = rr.end_block
                 
                 state_record = {
@@ -401,9 +320,9 @@ async def run_stream_ingest(
                     metrics.checkpoint_block.set(last_committed_block)
                     metrics.checkpoint_lag.set(max(0, latest_block - last_committed_block))
             
-            # -----------------------------
+            # -----------------------------------------
             # Refill inflight window
-            # -----------------------------
+            # -----------------------------------------
             latest_block = latest_tracker.get_cached()
             
             if latest_block is not None:
@@ -445,7 +364,7 @@ async def main():
     
     planner = TailingRangePlanner(start_block, RANGE_SIZE)
     
-    await run_stream_ingest(
+    await stream_ingest_logs(
         planner=planner,
         rpc_pool=rpc_pool,
         producer=producer,

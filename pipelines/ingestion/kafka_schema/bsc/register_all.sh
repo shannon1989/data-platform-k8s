@@ -17,7 +17,7 @@ register () {
 }
 
 
-register blockchain.ingestion.bsc.logs-key blockchain.logs.bsc-key.avsc
-register blockchain.ingestion.bsc.logs-value blockchain.logs.bsc-value.avsc
-register blockchain.ingestion.bsc.state-key blockchain.state.bsc-key.avsc
-register blockchain.ingestion.bsc.state-value blockchain.state.bsc-value.avsc
+register blockchain.ingestion.bsc.mainnet.logs-key blockchain.ingestion.bsc.mainnet.logs-key.avsc
+register blockchain.ingestion.bsc.mainnet.logs-value blockchain.ingestion.bsc.mainnet.logs-value.avsc
+register blockchain.ingestion.bsc.mainnet.state-key blockchain.ingestion.bsc.mainnet.state-key.avsc
+register blockchain.ingestion.bsc.mainnet.state-value blockchain.ingestion.bsc.mainnet.state-value.avsc

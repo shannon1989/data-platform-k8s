@@ -6,8 +6,8 @@ flowchart TD
     subgraph CHAINS["Blockchain Networks"]
         BSC["BSC"]
         ETH["Ethereum"]
-        SOLANA["Solana"]
         SUI["Sui"]
+        SOLANA["Solana"]
     end
 
     %% =====================
@@ -16,18 +16,16 @@ flowchart TD
     subgraph K8S["Kubernetes Cluster"]
         direction TB
 
-        subgraph BSC_INGEST["BSC Ingestion (Deployments / Pods)"]
-            BSC_LOGS["bsc-pod-logs<br/>Async RPC Logs Ingestion"]
-            BSC_BLOCKS["bsc-pod-blocks<br/>Block Ingestion"]
-            BSC_TX["bsc-pod-tx<br/>Transaction Ingestion"]
-            BSC_RECEIPTS["bsc-pod-receipts<br/>Receipt Ingestion"]
+        subgraph BSC_INGEST["BSC Ingestion Pod"]
+            BSC_LOGS["bsc-data-ingestion<br/>Async RPC Ingestion<br/>Blocks / Tx / Logs"]
         end
 
-        subgraph ETH_INGEST["ETH Ingestion (Deployments / Pods)"]
-            ETH_LOGS["eth-pod-logs"]
-            ETH_BLOCKS["eth-pod-blocks"]
-            ETH_TX["eth-pod-tx"]
-            ETH_RECEIPTS["eth-pod-receipts"]
+        subgraph ETH_INGEST["ETH Ingestion Pod"]
+            ETH_LOGS["eth-data-ingestion"]
+        end
+
+        subgraph SUI_INGEST["SUI Ingestion Pod"]
+            SUI_INGESTION["sui-data-ingestion"]
         end
     end
 
@@ -38,13 +36,13 @@ flowchart TD
 
 
         subgraph KAFKA_RAW_TOPICS["Kafka - Raw Topics"]
-        RAW_TOPICS["Raw Topics<br/>bsc.logs.raw<br/>bsc.blocks.raw<br/>eth.logs.raw<br/>..."]
+        RAW_TOPICS["bsc._state<br/>bsc.blocks<br/>bsc.transactions.raw<br/>bsc.logs.raw<br/>..."]
         end
 
 
         subgraph KAFKA_TRANS_TOPICS["Kafka - Transformed Topics "]
 
-        TRANS_TOPICS["Transformed Topics<br/>bsc.logs.transformed<br/>erc20.transfer<br/>..."]
+        TRANS_TOPICS["Transformed Topics<br/>bsc.logs.refined<br/>bsc.transactions.refined<br/>..."]
         end
     %% end
 
@@ -89,28 +87,13 @@ flowchart TD
     %% Connections
     %% =====================
     BSC --> BSC_LOGS
-    BSC --> BSC_BLOCKS
-    BSC --> BSC_TX
-    BSC --> BSC_RECEIPTS
-
     ETH --> ETH_LOGS
-    ETH --> ETH_BLOCKS
-    ETH --> ETH_TX
-    ETH --> ETH_RECEIPTS
-
+    SUI --> SUI_INGESTION
     BSC_LOGS --> RAW_TOPICS
-    BSC_BLOCKS --> RAW_TOPICS
-    BSC_TX --> RAW_TOPICS
-    BSC_RECEIPTS --> RAW_TOPICS
-
     ETH_LOGS --> RAW_TOPICS
-    ETH_BLOCKS --> RAW_TOPICS
-    ETH_TX --> RAW_TOPICS
-    ETH_RECEIPTS --> RAW_TOPICS
-
+    SUI_INGESTION --> RAW_TOPICS
     RAW_TOPICS --> FLINK_JOB
     FLINK_JOB --> TRANS_TOPICS
-
     TRANS_TOPICS --> SPARK_ENGINE
     SPARK_ENGINE --> SILVER
     SILVER --> GOLD

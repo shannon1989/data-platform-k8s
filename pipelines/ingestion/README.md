@@ -114,3 +114,86 @@ helm install loki grafana/loki-stack \
   --set grafana.enabled=false \
   --set promtail.enabled=true
 ```
+
+
+## Data modeling
+
+bsc_blocks (only blocks without full transactions)
+bsc_transactions (only full transactions)
+bsc_logs (only logs)
+
+
+1️⃣ `blocks` —— 时间轴 & 全局参照系
+- block_number
+- block_timestamp
+- miner / proposer
+- baseFee / gasLimit（EIP-1559 链）
+- parentHash → reorg 判断
+
+📌 作用：
+- 所有事实表的时间维度
+- checkpoint / exactly-once
+- 链级统计（TPS、gas）
+
+❌ 不承载业务事件
+
+
+2️⃣ `transactions` —— 交易“意图层”
+
+- from / to
+- value（原生币转账）
+- input data（函数调用）
+- gas / gasPrice / nonce
+
+📌 作用：
+
+- EOA → EOA 转账
+- 谁调用了谁（call graph 起点）
+- 方法级分析（function selector）
+
+❗️注意：
+- 绝大多数“业务事实”不在这里
+
+
+3️⃣ `logs` —— 事实真相层（最重要）
+
+- ERC20 Transfer
+- DEX Swap / Mint / Burn
+- NFT Mint / Transfer
+- 借贷、清算、质押、治理
+
+📌 这是唯一可靠的“业务事实源”
+
+- 只要合约 emit，你就一定能看到
+
+
+| 场景           | blocks | tx | logs | 是否覆盖 |
+| ------------ | ------ | -- | ---- | ---- |
+| BNB 转账       | ❌      | ✅  | ❌    | ✅    |
+| ERC20 转账     | ❌      | ❌  | ✅    | ✅    |
+| 合约调用         | ❌      | ✅  | ⚠️   | ✅    |
+| DEX Swap     | ❌      | ❌  | ✅    | ✅    |
+| LP Mint/Burn | ❌      | ❌  | ✅    | ✅    |
+| NFT 转移       | ❌      | ❌  | ✅    | ✅    |
+| Internal Tx  | ❌      | ❌  | ❌    | ❌    |
+| 没有 emit 的逻辑  | ❌      | ⚠️ | ❌    | ❌    |
+
+get_balance
+- logs + tx 计算
+
+
+Reorg:
+
+removed = true
+
+if removed:
+    delta_amount = -original_delta
+📌 balance 是 可逆的
+
+```TXT
+BEGIN RANGE TX
+  fetch logs
+  fetch blocks
+  fetch txs
+COMMIT RANGE TX
+```

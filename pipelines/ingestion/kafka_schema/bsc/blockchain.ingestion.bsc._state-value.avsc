@@ -10,11 +10,6 @@
       "doc": "bsc_realtime_logs / bsc_backfill_blocks"
     },
     {
-      "name": "start_block",
-      "type": "long",
-      "doc": "starting block number"
-    },
-    {
       "name": "run_id",
       "type": "string"
     },

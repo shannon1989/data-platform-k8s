@@ -143,6 +143,7 @@
 
 ## [1.0.5] - 2026-01-28
 ### Changed
+  - Redesign Kafka topics to support: blocks, Tx, receipts, traces.
   - 
 
 
