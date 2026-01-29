@@ -1,4 +1,4 @@
 # src/tracking/__init__.py
-from .latest_block_tracker import LatestBlockTracker
+from .latest_block_tracker import UnifiedLatestBlockTracker
 
-__all__ = ["LatestBlockTracker"]
+__all__ = ["UnifiedLatestBlockTracker"]

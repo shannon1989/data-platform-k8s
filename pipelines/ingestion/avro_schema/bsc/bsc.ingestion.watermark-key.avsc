@@ -5,7 +5,7 @@
   "doc": "Ingestion progress and control state for blockchain pipelines",
   "fields": [
     {
-      "name": "job_name",
+      "name": "state_key",
       "type": "string",
       "doc": "bsc_realtime_logs / bsc_backfill_blocks"
     }

@@ -11,9 +11,6 @@ from src.planning.range_planner import TailingRangePlanner,BoundedRangePlanner
 from src.execution.range_result import RangeResult
 from src.execution.ordered_buffer import OrderedResultBuffer
 
-# tracking
-from src.tracking.latest_block_tracker import LatestBlockTracker
-
 __all__ = [
     # control
     "RangeStatus",
@@ -28,7 +25,4 @@ __all__ = [
     # execution
     "RangeResult",
     "OrderedResultBuffer",
-
-    # tracking
-    "LatestBlockTracker",
 ]

@@ -5,12 +5,12 @@ import asyncio
 import socket
 from confluent_kafka.serialization import SerializationContext, MessageField
 from prometheus_client import start_http_server
-
+# from confluent_kafka import KafkaException
 from src import RangeResult, RangeRegistry, TailingRangePlanner, OrderedResultBuffer
 from src.logging import log
 from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.kafka_utils import init_producer, get_serializers
-from src.web3_utils import current_utctime
+# from src.web3_utils import current_utctime
 from src.metrics import MetricsContext
 from src.metrics.runtime import set_current_metrics, get_metrics
 from src.tracking import LatestBlockTracker
@@ -25,17 +25,22 @@ CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-r
 # -----------------------------
 # Kafka and Job Name
 # -----------------------------
-JOB_NAME = f"{CHAIN}_realtime_resume"
+DOMAIN = "blockchain"
+ROLE = "ingestion"
 
+# Transactional setting
+JOB_NAME = f"realtime_resume"
 INSTANCE_ID = (os.getenv("POD_NAME") or f"{socket.gethostname()}-{os.getpid()}")
-# TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
-TRANSACTIONAL_ID = f"blockchain.ingestion.{JOB_NAME}.{INSTANCE_ID}"
+TRANSACTIONAL_ID = f"{DOMAIN}.{CHAIN}.{ROLE}.{JOB_NAME}.{INSTANCE_ID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
-BLOCKS_TOPIC = f"blockchain.ingestion.{CHAIN}.blocks.raw"
-LOGS_TOPIC = f"blockchain.ingestion.{CHAIN}.logs.raw"
-TXS_TOPIC = f"blockchain.ingestion.{CHAIN}.transactions.raw"
-STATE_TOPIC = f"blockchain.ingestion.{CHAIN}._state"
+
+# Kafka Topics
+BLOCKS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.blocks.raw"
+LOGS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.logs.raw"
+TXS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.transactions.raw"
+STATE_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.watermark"
 
 # -----------------------------
 # RPC Config
@@ -58,7 +63,8 @@ rpc_pool = RpcPool.grouped_from_config(rpc_configs, CHAIN)
 # -----------------------------
 # Kafka Producer initialization
 # -----------------------------
-blocks_value_serializer, state_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC)
+topics_value_serializer = get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC, LOGS_TOPIC, TXS_TOPIC)
+blocks_value_serializer, state_value_serializer, logs_value_serializer, txs_value_serializer = topics_value_serializer
 producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
 # -----------------------------
@@ -240,10 +246,10 @@ async def run_stream_ingest(
                     logs_by_block.setdefault(bn, []).append(log_item)
 
                 for bn, txs in logs_by_block.items():
-                    total_tx = len(txs)
+                    total_logs = len(txs)
                     
                     metrics.block_processed.inc()
-                    metrics.tx_processed.inc(total_tx)
+                    metrics.tx_processed.inc(total_logs)
                     
                     for idx, tx in enumerate(txs):
                         
@@ -251,15 +257,13 @@ async def run_stream_ingest(
                             "block_height": bn,
                             "job_name": job_name,
                             "run_id": RUN_ID,
-                            "inserted_at": current_utctime(),
                             "raw": json.dumps(tx),
-                            "tx_index": idx,
                         }
                         
                         producer.produce(
                             topic=LOGS_TOPIC,
                             key=f"{bn}-{idx}",
-                            value=blocks_value_serializer(
+                            value=logs_value_serializer(
                                 log_record,
                                 SerializationContext(
                                     LOGS_TOPIC, MessageField.VALUE
@@ -267,7 +271,8 @@ async def run_stream_ingest(
                             ),
                         )
                     producer.poll(0)
-                    
+                
+                
                 # -----------------------------
                 # produce Blocks
                 # -----------------------------
@@ -275,19 +280,41 @@ async def run_stream_ingest(
                 txs_by_bn = {}
 
                 for bn in range(rr.start_block, rr.end_block + 1):
-                    block, rpc, key_env, *_ = await router.call_once(
+                    res = await router.call_once(
                         "eth_getBlockByNumber",
                         [hex(bn), True],
                     )
 
-                    if not block:
-                        raise
+                    if isinstance(res, RpcErrorResult):
+                        raise RuntimeError(f"block rpc failed at {bn}")
 
-                    # blockHash 注入到 tx
+                    block, rpc, key_env, *_ = res
+
+                    log.info(
+                        "📦 get_block_by_num",
+                        extra={
+                            "rpc": rpc,
+                            "key_env": key_env,
+                            "method": "eth_getBlockByNumber",
+                            "block_num": int(block["number"], 16)
+                        },
+                    )
+
+                    if not block:
+                        raise RuntimeError(f"empty block at {bn}")
+
                     block_hash = block["hash"]
 
-                    blocks_by_bn[bn] = block
+                    # -------- block header（去掉 transactions）--------
+                    block_header = {
+                        k: v
+                        for k, v in block.items()
+                        if k != "transactions"
+                    }
 
+                    blocks_by_bn[bn] = block_header
+
+                    # -------- tx 明细单独拆 --------
                     txs = []
                     for tx in block.get("transactions", []):
                         tx["blockHash"] = block_hash
@@ -301,13 +328,12 @@ async def run_stream_ingest(
                         "block_height": bn,
                         "job_name": job_name,
                         "run_id": RUN_ID,
-                        "inserted_at": current_utctime(),
                         "raw": json.dumps(block),
                     }
 
                     producer.produce(
                         topic=BLOCKS_TOPIC,
-                        key=bn,
+                        key=f"{bn}",
                         value=blocks_value_serializer(
                             block_record,
                             SerializationContext(
@@ -321,26 +347,22 @@ async def run_stream_ingest(
                 # produce transactions
                 # -----------------------------
                 for bn, txs in txs_by_bn.items():
+                    total_tx = len(txs)
                     for idx, tx in enumerate(txs):
                         txs_record = {
                             "block_height": bn,
-                            "tx_hash": tx["hash"],
                             "job_name": job_name,
                             "run_id": RUN_ID,
-                            "inserted_at": current_utctime(),
                             "raw": json.dumps(tx),
-                            "tx_index": idx,
                         }
 
                         producer.produce(
                             topic=TXS_TOPIC,
-                            key=tx["hash"],
-                            value=blocks_value_serializer(
+                            key=f"{bn}-{idx}",
+                            value=txs_value_serializer(
                             txs_record,
-                            SerializationContext(
-                                TXS_TOPIC, MessageField.VALUE
+                            SerializationContext(TXS_TOPIC, MessageField.VALUE),
                             ),
-                        ),
                         )
 
                     producer.poll(0)
@@ -351,15 +373,12 @@ async def run_stream_ingest(
                 last_committed_block = rr.end_block
                 
                 state_record = {
-                    "job_name": job_name,
                     "run_id": f"{RUN_ID}",
-                    "range": {
+                    "current_range": {
                         "start": rr.start_block,
                         "end": rr.end_block,
                     },
                     "checkpoint": last_committed_block,
-                    "status": "running",
-                    "inserted_at": current_utctime(),
                 }
                 
                 producer.produce(
@@ -387,13 +406,14 @@ async def run_stream_ingest(
                         "rpc": rr.rpc,
                         "key_env": rr.key_env,
                         "log_count": len(rr.logs),
+                        "txs_count": total_tx,
                     },
                 )
                 
                 # 系统 checkpoint 推进速度
-                metrics.tx_per_block.observe(total_tx)
+                metrics.tx_per_block.observe(total_logs)
                 metrics.block_committed.inc()
-                metrics.tx_committed.inc(total_tx)
+                metrics.tx_committed.inc(total_logs)
 
                 latest_block = latest_tracker.get_cached()
                 if latest_block is not None:
@@ -425,7 +445,7 @@ async def main():
     client = AsyncRpcClient(timeout=RPC_MAX_TIMEOUT)
     router = Web3AsyncRouter(rpc_pool, client)
 
-    latest_block, rpc, key_env, meta = await router.call_once("eth_blockNumber", [])
+    latest_block, *_ = await router.call_once("eth_blockNumber", [])
     if isinstance(latest_block, str):
         latest_block = int(latest_block, 16)
 

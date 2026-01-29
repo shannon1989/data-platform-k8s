@@ -5,9 +5,9 @@
   "doc": "Raw blockchain log from eth_getLogs",
   "fields": [
     {
-      "name": "block_height",
+      "name": "topic_key",
       "type": "long",
-      "doc": "Block number / slot / checkpoint with index"
+      "doc": "Block number / slot / checkpoint with index / eg:77736439-524"
     }
   ]
 }

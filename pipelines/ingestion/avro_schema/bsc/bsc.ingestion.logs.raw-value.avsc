@@ -2,7 +2,7 @@
   "type": "record",
   "name": "BlockEvent",
   "namespace": "blockchain.ingestion.logs",
-  "doc": "Raw blockchain log from eth_getLogs (Compatibility:BACKWARD)",
+  "doc": "Raw blockchain log from eth_getLogs",
   "fields": [
     {
       "name": "block_height",

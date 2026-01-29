@@ -1,11 +1,11 @@
 {
   "type": "record",
   "name": "BlockKey",
-  "namespace": "blockchain.ingestion.logs",
-  "doc": "Raw blockchain log from eth_getLogs",
+  "namespace": "blockchain.ingestion.transactions",
+  "doc": "Raw blockchain transactions from eth_getBlockByNumber",
   "fields": [
     {
-      "name": "block_height",
+      "name": "topic_key",
       "type": "long",
       "doc": "Block number / slot / checkpoint with index"
     }

@@ -28,9 +28,9 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.0.4
+          image: web3-stream-ingestion:1.0.6
           imagePullPolicy: IfNotPresent
-          command: ["python", "web3_realtime_job.py"]
+          command: ["python", "web3_realtime_logs.py"]
 
           # -----------------------------
           # Ingest runtime variables
@@ -38,12 +38,9 @@ spec:
           env:
             - name: CHAIN
               value: "bsc"
-
-            - name: RESUME_FROM_LAST
-              value: "true"
             # -----------------------------
             # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
-            # RANGE_SIZE <= 2 for some public nodes (realtime setting: 8-16-2)
+            # RANGE_SIZE <= 2 for realtime streaming
             # -----------------------------
             - name: RANGE_SIZE
               value: "5"

@@ -19,15 +19,15 @@ services:
         icon: "fas fa-chart-area"
         target: "_blank"
 
-      - name: "Kubernetes dashboard"
-        url: "http://localhost:9092"
-        icon: "fas fa-chart-area"
-        target: "_blank"
+      # - name: "Kubernetes dashboard"
+      #   url: "http://localhost:9092"
+      #   icon: "fas fa-chart-area"
+      #   target: "_blank"
 
-      - name: "Headlamp"
-        url: "http://localhost:9093"
-        icon: "fas fa-chart-area"
-        target: "_blank"
+      # - name: "Headlamp"
+      #   url: "http://localhost:9093"
+      #   icon: "fas fa-chart-area"
+      #   target: "_blank"
 
   - name: "Orchestration"
     icon: "fas fa-project-diagram"

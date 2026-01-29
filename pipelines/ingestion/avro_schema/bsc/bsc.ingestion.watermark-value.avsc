@@ -5,16 +5,11 @@
   "doc": "Ingestion progress and control state for blockchain pipelines",
   "fields": [
     {
-      "name": "job_name",
-      "type": "string",
-      "doc": "bsc_realtime_logs / bsc_backfill_blocks"
+      "name": "checkpoint",
+      "type": "long"
     },
     {
-      "name": "run_id",
-      "type": "string"
-    },
-    {
-      "name": "range",
+      "name": "current_range",
       "type": {
         "type": "record",
         "name": "BlockRange",
@@ -25,8 +20,8 @@
       }
     },
     {
-      "name": "checkpoint",
-      "type": "long"
+      "name": "run_id",
+      "type": "string"
     }
   ]
 }

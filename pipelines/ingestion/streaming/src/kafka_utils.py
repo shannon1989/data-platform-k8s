@@ -59,11 +59,15 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
     producer.init_transactions()
     return producer
 
-def get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC):
+def get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC, LOGS_TOPIC, TXS_TOPIC):
     schema_registry = SchemaRegistryClient({"url": SCHEMA_REGISTRY_URL})
     blocks_value_schema = schema_registry.get_latest_version(f"{BLOCKS_TOPIC}-value").schema.schema_str
     state_value_schema = schema_registry.get_latest_version(f"{STATE_TOPIC}-value").schema.schema_str
+    logs_value_schema = schema_registry.get_latest_version(f"{LOGS_TOPIC}-value").schema.schema_str
+    txs_value_schema = schema_registry.get_latest_version(f"{TXS_TOPIC}-value").schema.schema_str
     return (
         AvroSerializer(schema_registry, blocks_value_schema),
-        AvroSerializer(schema_registry, state_value_schema)
+        AvroSerializer(schema_registry, state_value_schema),
+        AvroSerializer(schema_registry, logs_value_schema),
+        AvroSerializer(schema_registry, txs_value_schema)
     )

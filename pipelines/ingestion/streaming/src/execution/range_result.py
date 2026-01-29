@@ -6,11 +6,7 @@ class RangeResult:
     range_id: int
     start_block: int
     end_block: int
-    
     logs: list
-    blocks: dict[int, dict]        # block_number -> block
-    txs: dict[int, list[dict]]     # block_number -> [tx]
-    
     rpc: str
     key_env: str
     task_id: int

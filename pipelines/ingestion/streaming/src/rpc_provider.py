@@ -166,9 +166,10 @@ class RpcKeySlot:
 # RPC Provider
 # -----------------------------
 class RpcProvider:
-    def __init__(self, name, base_url, weight, key_envs=None, key_interval=1.0):
+    def __init__(self, name, base_url, weight, key_envs=None, key_interval=1.0, ws_url: str | None = None):
         self.name = name
         self.base_url = base_url
+        self.ws_url = ws_url
         self.weight = weight
         
         # Circuit breaker state
@@ -236,12 +237,10 @@ class RpcProvider:
                 },
             )
 
-
     def on_half_open_failure(self):
         # HALF_OPEN 探测失败 → 立刻回 OPEN
         self.cooldown_until = time.monotonic() + self.cooldown_sec
         self.half_open_probe = False
-        
 
     async def acquire_slot(self):
         if not self.slots:
@@ -258,6 +257,26 @@ class RpcProvider:
 
         raise RpcKeyUnavailable(self.name)
 
+    async def acquire_ws_url(self):
+        """
+        返回可用的 ws_url (with key)
+        """
+        if not self.ws_url:
+            raise RpcKeyUnavailable("ws_not_supported")
+
+        if not self.slots:
+            return self.ws_url, "public"
+
+        for _ in range(len(self.slots)):
+            slot = self.slots[self._rr]
+            self._rr = (self._rr + 1) % len(self.slots)
+            try:
+                key = await slot.acquire()
+                return f"{self.ws_url}/{key}", slot.key_env
+            except RpcKeyUnavailable:
+                continue
+
+        raise RpcKeyUnavailable(self.name)
 
 
 # -----------------------------
@@ -280,7 +299,23 @@ class RpcPool:
 
         random.shuffle(candidates)
         return candidates
-    
+
+    # webSocket RPC
+    def pick_ws_provider(self) -> RpcProvider | None:
+        candidates = [
+            p for p in self.providers
+            if p.ws_url and p.available()
+        ]
+
+        if not candidates:
+            return None
+
+        weighted = []
+        for p in candidates:
+            weighted.extend([p] * p.weight)
+
+        return random.choice(weighted)
+
     @classmethod
     def grouped_from_config(cls, rpc_configs: dict, chain: str) -> "GroupedRpcPool":
         chain_cfg = rpc_configs["chains"][chain]
@@ -302,6 +337,7 @@ class RpcPool:
                     RpcProvider(
                         name=cfg["name"],
                         base_url=cfg["base_url"],
+                        ws_url=cfg.get("ws_url"),
                         weight=int(cfg.get("weight", 1)),
                         key_envs=cfg.get("api_keys_env"),
                         key_interval=float(cfg.get("key_interval", 1.0)),
@@ -333,6 +369,16 @@ class GroupedRpcPool:
             raise RuntimeError(f"No RPC pool for method_group: {group}")
 
         return pool
+
+    def all_providers(self) -> list[RpcProvider]:
+        seen = set()
+        providers = []
+        for pool in self.pools.values():
+            for p in pool.providers:
+                if p not in seen:
+                    seen.add(p)
+                    providers.append(p)
+        return providers
 
 
 class Web3AsyncRouter:

@@ -18,3 +18,4 @@ def build_method_group_map(chain_cfg: dict) -> dict[str, str]:
         for m in methods:
             mapping[m] = group
     return mapping
+
