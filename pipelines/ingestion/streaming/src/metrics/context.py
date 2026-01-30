@@ -37,7 +37,7 @@ class MetricsContext:
     
     rpc_failed: any
     rpc_latency: any
-    rpc_key_unavailable: any
+    rpc_key_wait: any
 
     # range registry
     rpc_queue_size: any
@@ -90,8 +90,8 @@ class MetricsContext:
     def rpc_queue_size_set(self, value_num: float):
         self.rpc_queue_size.set(value_num)
 
-    def rpc_key_unavailable_inc(self, key: str):
-        self.rpc_key_unavailable.labels(
+    def rpc_key_wait_inc(self, key: str):
+        self.rpc_key_wait.labels(
             chain=self.chain,
             job=self.job,
             key=key,
@@ -146,7 +146,7 @@ class MetricsContext:
             rpc_completed=m.RPC_COMPLETED,
             rpc_failed=m.RPC_FAILED,
             rpc_latency=m.RPC_LATENCY,
-            rpc_key_unavailable=m.RPC_KEY_UNAVAILABLE,
+            rpc_key_wait=m.RPC_KEY_WAIT,
             
             # range registry
             range_inflight=m.RANGE_INFLIGHT.labels(**base),

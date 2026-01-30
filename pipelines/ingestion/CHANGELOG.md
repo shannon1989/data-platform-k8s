@@ -143,8 +143,19 @@
 
 ## [1.0.5] - 2026-01-28
 ### Changed
-  - Redesign Kafka topics to support: blocks, Tx, receipts, traces.
-  - 
+  - Redesign Kafka topics to support: blocks, transactions and logs
+
+## [1.0.5] - 2026-01-29
+### Changed
+  - Add support for websocket (optional)
+  - Redesign blokcs, logs, transactions and watermark topics
+
+## [1.0.6] - 2026-01-30
+### Changed
+  - Update break-circute logic 实现指数退避功能
+  - Add new method group "medium"
+  - Add blocks/tx ingestion job - web3_realtime_blocks.py
+  - Show metrics of bsc_realtime_blocks
 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)

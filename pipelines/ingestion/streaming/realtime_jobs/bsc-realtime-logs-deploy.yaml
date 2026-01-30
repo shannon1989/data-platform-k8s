@@ -40,15 +40,14 @@ spec:
               value: "bsc"
             # -----------------------------
             # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
-            # RANGE_SIZE <= 2 for realtime streaming
+            # RANGE_SIZE <= 3 to reduce latency between checkping and chain_head
             # -----------------------------
             - name: RANGE_SIZE
-              value: "5"
+              value: "3"
 
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
+            - name: RPC_MAX_INFLIGHT
+              value: "5"
+      
           # -----------------------------
           # Metrics endpoint
           # -----------------------------
@@ -78,11 +77,11 @@ spec:
           # -----------------------------
           resources:
             requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
               cpu: "500m"
               memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "1Gi"
 
           # livenessProbe:
           #   httpGet:

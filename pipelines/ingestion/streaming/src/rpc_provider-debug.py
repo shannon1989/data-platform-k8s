@@ -93,6 +93,15 @@ class AsyncRpcClient:
         return tc
 
     async def call(self, url: str, method: str, params: list):
+        
+        log.debug(
+            "🌐 rpc_http_request",
+            extra={
+                "method": method,
+                "url": url,
+            },
+        )
+        
         trace = RpcTrace(method=method)
         trace_cfg = self._build_trace_config(trace)
 
@@ -132,6 +141,14 @@ class AsyncRpcClient:
                 raise RpcRateLimitError(data["error"])
             raise RuntimeError(data["error"])
 
+        log.info(
+            "✅ rpc_http_success",
+            extra={
+                "method": method,
+                "total_ms": round(trace.total_ms, 2),
+            },
+        )
+
         return data["result"], trace
 
 
@@ -143,7 +160,7 @@ class RpcContext(NamedTuple):
     key_env: str
 
 # -----------------------------
-# RPC Key Slot: 滑动窗口频率控制 (backpressure)
+# RPC Key Slot: 滑动窗口频率控制
 # -----------------------------
 class RpcKeySlot:
     def __init__(self, key_env: str, min_interval: float):
@@ -155,17 +172,11 @@ class RpcKeySlot:
     async def acquire(self):
         async with self._lock:
             now = time.monotonic()
-            
-            wait = self._next_available - now
-            
-            if  wait > 0:
-                # 语义升级：不是不可用，而是被限速
-                # m().rpc_key_wait_seconds.observe(wait)
-                m().rpc_key_wait_inc(self.key_env)
-                await asyncio.sleep(wait)
+            if now < self._next_available:
+                m().rpc_key_unavailable_inc(self.key_env)
+                raise RpcKeyUnavailable(self.key_env)
 
-            # 占用 slot
-            self._next_available = time.monotonic() + self.min_interval
+            self._next_available = now + self.min_interval
             return os.getenv(self.key_env)
 
 # -----------------------------
@@ -176,7 +187,7 @@ class RpcProvider:
         self.name = name
         self.base_url = base_url
         self.weight = weight
-
+        
         # failure & backoff
         self.fail_count = 0
         self.cooldown_until = 0.0
@@ -192,7 +203,7 @@ class RpcProvider:
             self.key_envs = [key_envs]
         else:
             self.key_envs = list(key_envs)
-
+    
         self.slots = [
             RpcKeySlot(env, key_interval)
             for env in self.key_envs
@@ -211,7 +222,7 @@ class RpcProvider:
     def on_success(self):
         if self.fail_count > 0:
             log.info(
-                "🌐 rpc_recovered",
+                "✅ rpc_recovered",
                 extra={
                     "rpc": self.name,
                     "prev_fail_count": self.fail_count,
@@ -254,6 +265,7 @@ class RpcProvider:
             )
 
 
+
     async def acquire_slot(self):
         if not self.slots:
             return self.base_url, "public"
@@ -277,7 +289,7 @@ class RpcProvider:
 class RpcPool:
     def __init__(self, providers):
         self.providers = providers
-
+        
     def pick_providers(self):
         """
         根据 weight 生成一个 provider 尝试顺序 (weight越大, 越先尝试这个provider)
@@ -291,23 +303,23 @@ class RpcPool:
 
         random.shuffle(candidates)
         return candidates
-
+    
     @classmethod
     def grouped_from_config(cls, rpc_configs: dict, chain: str) -> "GroupedRpcPool":
         chain_cfg = rpc_configs["chains"][chain]
-
+    
         method_group_map = build_method_group_map(chain_cfg)
-
+    
         pools: dict[str, RpcPool] = {}
-
+    
         for cfg in chain_cfg.get("providers", []):
             if not cfg.get("enabled", True):
                 continue
-
+    
             groups = cfg.get("method_groups", [])
             if isinstance(groups, str):
                 groups = [groups]
-
+    
             for g in groups:
                 pools.setdefault(g, []).append(
                     RpcProvider(
@@ -318,12 +330,12 @@ class RpcPool:
                         key_interval=float(cfg.get("key_interval", 1.0)),
                     )
                 )
-
+    
         rpc_pools = {
             g: RpcPool(providers)
             for g, providers in pools.items()
         }
-
+    
         return GroupedRpcPool(rpc_pools, method_group_map)
 
 
@@ -352,16 +364,37 @@ class Web3AsyncRouter:
         self.client = client
 
     async def call_once(self, method, params):
+        
         pool = self.grouped_pool.pool_for_method(method)
         providers = pool.pick_providers()
 
-        last_error = None
+        log.debug(
+            "🔀 rpc_call_once_start",
+            extra={
+                "method": method,
+                "params": params,
+                "provider_count": len(providers),
+            },
+        )
 
         for p in providers:
+            
+            log.debug(
+                "➡️ rpc_try_provider",
+                extra={
+                    "rpc": p.name,
+                    "available": p.available(),
+                    "fail_count": p.fail_count,
+                },
+            )
+            
             if not p.available():
                 continue
 
-            url, key_env = await p.acquire_slot()
+            try:
+                url, key_env = await p.acquire_slot()
+            except RpcKeyUnavailable:
+                continue
 
             try:
                 result, trace = await self.client.call(url, method, params)
@@ -372,19 +405,16 @@ class Web3AsyncRouter:
             except RpcRateLimitError as e:
                 # 🚨 强失败：直接指数退避
                 p.on_failure()
-                last_error = e
                 continue
 
             except (TimeoutError, asyncio.TimeoutError) as e:
                 # ⏱️ 软失败：也计入指数退避（很重要）
                 p.on_failure()
-                last_error = e
                 continue
 
             except Exception as e:
-                # ❌ 未知错误：视为失败，但不在这里 raise
+                # ❌ 未知错误：视为失败
                 p.on_failure()
-                last_error = e
 
                 m().rpc_failed_inc(provider=p.name, key=key_env)
                 log.warning(
@@ -396,11 +426,11 @@ class Web3AsyncRouter:
                         "error": str(e),
                     },
                 )
-                continue
+                raise
 
         # 所有 provider 都不可用
-        raise RpcTemporarilyUnavailable() from last_error
-
+        # raise RpcTemporarilyUnavailable()
+    
 
     async def get_latest_block(self) -> int:
         result, rpc, key_env, trace = await self.call_once(
@@ -442,7 +472,7 @@ class AsyncRpcScheduler:
 
     async def submit(
         self,
-        method: str,
+        method: str, 
         params: list,
         *,
         meta: dict | None = None,
@@ -461,9 +491,19 @@ class AsyncRpcScheduler:
 
         await self.queue.put((method, params, fut, task_meta))
 
+        log.info(
+            "📤 rpc_task_submitted",
+            extra={
+                "task_id": task_meta.task_id,
+                "method": method,
+                "queue_size": self.queue.qsize(),
+                "meta": task_meta.extra,
+            },
+        )
+
         m().rpc_submitted_inc()
         m().rpc_queue_size_set(self.queue.qsize())
-
+        
         return await fut
 
     async def _dispatcher_loop(self, wid: int):
@@ -477,7 +517,7 @@ class AsyncRpcScheduler:
                 if item is _STOP:
                     self.queue.task_done()
                     break
-
+                
                 method, params, fut, meta = item
             except asyncio.CancelledError:
                 break
@@ -487,18 +527,15 @@ class AsyncRpcScheduler:
             queue_wait_ms = (dispatch_ts - meta.submit_ts) * 1000
             m().rpc_queue_wait_observe(queue_wait_ms)
             m().rpc_queue_size_set(self.queue.qsize())
-
-            # log.info(
-            #     "rpc_dispatch",
-            #     extra={
-            #         "task_id": meta.task_id,
-            #         # "worker": wid,
-            #         "method": method,
-            #         "queue_wait_ms": round(
-            #             (dispatch_ts - meta.submit_ts) * 1000, 2
-            #         ),
-            #     },
-            # )
+            
+            log.debug(
+                "🧭 rpc_dispatcher_tick",
+                extra={
+                    "worker": wid,
+                    "queue_size": self.queue.qsize(),
+                    "inflight_locked": self.inflight.locked(),
+                },
+            )
 
             # 🔥 不 await RPC
             asyncio.create_task(
@@ -508,32 +545,42 @@ class AsyncRpcScheduler:
             self.queue.task_done()
 
     async def _execute_rpc(self, method, params, fut, meta, wid):
+        
+        log.debug(
+            "⏳ rpc_wait_inflight",
+            extra={
+                "task_id": meta.task_id,
+                "method": method,
+                "queue_size": self.queue.qsize(),
+            },
+        )
+
         async with self.inflight:
             # rpc_start_ts = time.time()
 
             m().rpc_started.inc()
             m().rpc_inflight.inc()
-
-            # log.info(
-            #     "rpc_call_start",
-            #     extra={
-            #         "task_id": meta.task_id,
-            #         # "worker": wid,
-            #         "method": method,
-            #     },
-            # )
+            
+            log.info(
+                "🚀 rpc_started",
+                extra={
+                    "task_id": meta.task_id,
+                    "method": method,
+                    "worker": wid,
+                },
+            )
 
             try:
                 result, rpc, key_env, trace = await self.router.call_once(
                     method, params
                 )
-
+                
                 m().rpc_completed_inc(rpc, key_env)
-
+                
                 if trace and trace.total_ms is not None:
                     # key 级别的问题 用 Counter 看，延迟分布 只看 provider 级
                     m().rpc_latency_observe(rpc, trace.total_ms)
-
+                    
                 if not fut.done():
                     fut.set_result(
                         (result, rpc, key_env, trace, wid, meta)
@@ -562,7 +609,7 @@ class AsyncRpcScheduler:
                 #         "error": str(e),
                 #     },
                 # )
-
+            
                 if not fut.done():
                     fut.set_result(
                         RpcErrorResult(
@@ -576,20 +623,30 @@ class AsyncRpcScheduler:
             finally:
                 m().rpc_inflight.dec()
                 m().rpc_finished_inc()
+                
+                log.info(
+                    "🧹 rpc_task_finished",
+                    extra={
+                        "task_id": meta.task_id,
+                        "method": method,
+                        "worker": wid,
+                        "inflight_remaining": self.inflight._value,
+                    },
+                )
 
 
     async def close(self):
         if self._closed:
             return
-
+    
         self._closed = True
-
+    
         # 等待所有 submit 的任务被 dispatcher 消化
         await self.queue.join()
-
+    
         # 给 dispatcher 发退出信号
         for _ in self.workers:
             await self.queue.put(_STOP)
-
+    
         # 等 dispatcher 正常退出
         await asyncio.gather(*self.workers, return_exceptions=True)

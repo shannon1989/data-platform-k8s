@@ -26,7 +26,7 @@ CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-r
 # -----------------------------
 DOMAIN = "blockchain"
 ROLE = "ingestion"
-SUBJECT = "logs"
+SUBJECT = "blocks"
 
 # Transactional setting
 JOB_NAME = f"realtime_{SUBJECT}"
@@ -47,15 +47,15 @@ STATE_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.watermark"
 RPC_CONFIG_PATH = "/etc/ingestion/rpc_providers.json"
 RPC_MAX_TIMEOUT = int(os.getenv("RPC_MAX_TIMEOUT", "10"))
 RPC_MAX_INFLIGHT = int(os.getenv("RPC_MAX_INFLIGHT", "5")) 
-# RPC_MAX_INFLIGHT < key_count * 2
-# RPC_MAX_INFLIGHT < MAX_INFLIGHT_RANGE < MAX_QUEUE
+# Rules: 
+# 1. RPC_MAX_INFLIGHT < key_count * 2
+# 2. RPC_MAX_INFLIGHT < MAX_INFLIGHT_RANGE < MAX_QUEUE
 MAX_INFLIGHT_RANGE = RPC_MAX_INFLIGHT * 2 
 MAX_QUEUE=RPC_MAX_INFLIGHT * 3
-
 # -----------------------------
 # Log fetching Config
 # -----------------------------
-RANGE_SIZE = int(os.getenv("RANGE_SIZE", "5")) # how many blocks of range to fetch for logs
+RANGE_SIZE = 1 # eth_getBlockByNumber only support one block
 # -----------------------------
 # RPC Initilization
 # -----------------------------
@@ -70,17 +70,16 @@ blocks_value_serializer, state_value_serializer, logs_value_serializer, txs_valu
 producer = init_producer(TRANSACTIONAL_ID, KAFKA_BROKER)
 
 # -----------------------------
-# submit range
+# submit block
 # -----------------------------
 async def submit_range(scheduler, registry, r):
     task = asyncio.create_task(
         scheduler.submit(
-            "eth_getLogs",
-            [{
-                "fromBlock": hex(r.start_block),
-                "toBlock": hex(r.end_block),
-                # Optional: "topics": [...], "address" : [...]
-            }],
+            "eth_getBlockByNumber",
+            [
+                hex(r.start_block),
+                True,
+            ],
             meta={
                 "range_id": r.range_id,
                 "start_block": r.start_block,
@@ -127,7 +126,6 @@ async def run_stream_ingest(
         # -----------------------------
         # Control plane / Ordering / Inflight Window
         # -----------------------------
-        # planner = TailingRangePlanner(start_block, range_size)
         registry = RangeRegistry()
         ordered_buffer = OrderedResultBuffer()
         inflight: set[asyncio.Task] = set()
@@ -194,16 +192,14 @@ async def run_stream_ingest(
                         range_id,
                         error=str(result.error),
                     )
-                    # log.warning(
-                    #     "❌ rpc_range_failed",
-                    #     extra={
-                    #         "range_id": range_id,
-                    #         "retry": registry.get(range_id).retry,
-                    #         "rpc": result.rpc or "UNKNOWN",
-                    #         "key_env": result.key_env or "UNKNOWN",
-                    #         "error": str(result.error),
-                    #     },
-                    # )
+                    log.warning(
+                        "❌ rpc_range_failed",
+                        extra={
+                            "range_id": range_id,
+                            "retry": registry.get(range_id).retry,
+                            "error": str(result.error),
+                        },
+                    )
                     # 重新提交该 range（换 RPC）
                     if retry_ok:
                         r = registry.get(range_id)
@@ -214,13 +210,13 @@ async def run_stream_ingest(
                     continue # 跳过下面成功处理逻辑
 
                 # ----------成功 RPC，解包, 顺序消费 ----------  
-                logs, rpc, key_env, trace, wid, meta = result
+                block, rpc, key_env, trace, wid, meta = result
 
                 rr = RangeResult(
                     range_id=meta.extra["range_id"],
                     start_block=meta.extra["start_block"],
                     end_block=meta.extra["end_block"],
-                    logs=logs or [],
+                    logs=block,
                     rpc=rpc,
                     key_env=key_env,
                     task_id=meta.task_id,
@@ -232,46 +228,109 @@ async def run_stream_ingest(
                 ready_ranges = ordered_buffer.pop_ready()
 
                 for rr in ready_ranges:
+                    # parse blocks info from RangeResult
+                    block = rr.logs
+                    
+                    if block is None:
+                        # 这是“正常的未就绪状态”，不是逻辑 bug
+                        log.warning(
+                            "⏳ block_not_ready",
+                            extra={
+                                "range_id": rr.range_id,
+                                "block": rr.start_block,
+                                "rpc": rr.rpc,
+                            },
+                        )
+
+                        # range 失败，走 retry
+                        # block_not_ready 永远不进入 Kafka 事务
+                        retry_ok = registry.mark_retry(
+                            rr.range_id,
+                            error="block_not_ready",
+                        )
+
+                        if retry_ok:
+                            r = registry.get(rr.range_id)
+                            inflight.add(await submit_range(scheduler, registry, r))
+                        else:
+                            registry.mark_failed(rr.range_id, "block_not_ready")
+
+                        continue  # ⬅️ 此时还没进事务，完全安全
+
                     # ===== Kafka EOS =====
                     producer.begin_transaction()
 
-                    # -----------------------------
-                    # produce logs
-                    # -----------------------------
-                    logs_by_block = {}
-                    for log_item in rr.logs:
-                        bn = log_item.get("blockNumber")
-                        if bn is None:
-                            continue
-                        if isinstance(bn, str):
-                            bn = int(bn, 16)
-                        logs_by_block.setdefault(bn, []).append(log_item)
+                    assert isinstance(block, dict), f"unexpected block type: {type(block)}"
+                    bn = rr.start_block
+                    block_hash = block["hash"]
 
-                    for bn, txs in logs_by_block.items():
-                        total_logs = len(txs)
-                        
+                    blocks_by_bn = {}
+                    txs_by_bn = {}
+                    # -------- block header（去掉 transactions）--------
+                    block_header = {
+                        k: v
+                        for k, v in block.items()
+                        if k != "transactions"
+                    }
+
+                    blocks_by_bn[bn] = block_header
+
+                    # -------- tx 明细单独拆 --------
+                    txs = []
+                    for tx in block.get("transactions", []):
+                        tx["blockHash"] = block_hash
+                        txs.append(tx)
+
+                    txs_by_bn[bn] = txs                    
+            
+                    # -----------------------------
+                    # produce Blocks
+                    # -----------------------------
+                    for bn, block in blocks_by_bn.items():
+                        block_record = {
+                            "block_height": bn,
+                            "job_name": job_name,
+                            "run_id": RUN_ID,
+                            "raw": json.dumps(block),
+                        }
+
+                        producer.produce(
+                            topic=BLOCKS_TOPIC,
+                            key=f"{bn}",
+                            value=blocks_value_serializer(
+                                block_record,
+                                SerializationContext(
+                                    BLOCKS_TOPIC, MessageField.VALUE
+                                ),
+                            ),
+                        )
+                        producer.poll(0)
+                    
+                    # -----------------------------
+                    # produce transactions
+                    # -----------------------------
+                    for bn, txs in txs_by_bn.items():
+                        total_tx = len(txs)
                         metrics.block_processed.inc()
-                        metrics.tx_processed.inc(total_logs)
+                        metrics.tx_processed.inc(total_tx)
                         
                         for idx, tx in enumerate(txs):
-                            
-                            log_record = {
+                            txs_record = {
                                 "block_height": bn,
                                 "job_name": job_name,
                                 "run_id": RUN_ID,
                                 "raw": json.dumps(tx),
                             }
-                            
+
                             producer.produce(
-                                topic=LOGS_TOPIC,
+                                topic=TXS_TOPIC,
                                 key=f"{bn}-{idx}",
-                                value=logs_value_serializer(
-                                    log_record,
-                                    SerializationContext(
-                                        LOGS_TOPIC, MessageField.VALUE
-                                    ),
+                                value=txs_value_serializer(
+                                txs_record,
+                                SerializationContext(TXS_TOPIC, MessageField.VALUE),
                                 ),
                             )
+
                         producer.poll(0)
                             
                     # -----------------------------
@@ -304,22 +363,21 @@ async def run_stream_ingest(
                     registry.mark_done(rr.range_id)
                     
                     log.info(
-                        "✅ range_committed",
+                        "✅ block_committed",
                         extra={
                             # "task_id": rr.task_id,
                             "range_id": rr.range_id,
-                            "start": rr.start_block,
-                            "end": rr.end_block,
+                            "block": rr.start_block,
                             "rpc": rr.rpc,
                             "key_env": rr.key_env,
-                            "log_count": len(rr.logs),
+                            "tx_count": total_tx,
                         },
                     )
                     
                     # 系统 checkpoint 推进速度
-                    metrics.tx_per_block.observe(total_logs)
+                    metrics.tx_per_block.observe(total_tx)
                     metrics.block_committed.inc()
-                    metrics.tx_committed.inc(total_logs)
+                    metrics.tx_committed.inc(total_tx)
 
                     latest_block = latest_tracker.get_cached()
                     if latest_block is not None:
