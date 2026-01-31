@@ -233,14 +233,16 @@ class RpcProvider:
 
         self.cooldown_until = time.monotonic() + cooldown
 
-        log.warning(
-            "⚠️ rpc_failure",
-            extra={
-                "rpc": self.name,
-                "fail_count": self.fail_count,
-                "cooldown_sec": cooldown,
-            },
-        )
+        # 只有失败 >= 3 次才告警
+        if self.fail_count >= 3:
+            log.warning(
+                "⚠️ rpc_failure",
+                extra={
+                    "rpc": self.name,
+                    "fail_count": self.fail_count,
+                    "cooldown_sec": cooldown,
+                },
+            )
 
         # 连续失败过多 → 永久禁用
         if self.fail_count >= self.disable_threshold:

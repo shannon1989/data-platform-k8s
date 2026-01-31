@@ -41,6 +41,7 @@ spec:
 
             - name: RPC_MAX_INFLIGHT
               value: "10"
+
           # -----------------------------
           # Metrics endpoint
           # -----------------------------

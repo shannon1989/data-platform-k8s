@@ -189,11 +189,3 @@ removed = true
 if removed:
     delta_amount = -original_delta
 📌 balance 是 可逆的
-
-```TXT
-BEGIN RANGE TX
-  fetch logs
-  fetch blocks
-  fetch txs
-COMMIT RANGE TX
-```

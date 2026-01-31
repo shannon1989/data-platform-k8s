@@ -142,7 +142,7 @@ async def run_stream_ingest(
                 break
             # 启动阶段 or RPC 全挂
             await asyncio.sleep(0.2)
-
+            
         while len(inflight) < max_inflight_ranges:
             r = planner.next_range(latest_block)
             if not r:
@@ -150,7 +150,7 @@ async def run_stream_ingest(
             
             rr = registry.register(r.range_id, r.start_block, r.end_block)
             inflight.add(await submit_range(scheduler, registry, rr))
-            
+        
         # -----------------------------
         # Main streaming loop
         # -----------------------------
@@ -170,7 +170,6 @@ async def run_stream_ingest(
                         inflight.add(await submit_range(scheduler, registry, rr))
                 continue
 
-            
             done, _ = await asyncio.wait(
                 inflight,
                 return_when=asyncio.FIRST_COMPLETED,
@@ -179,35 +178,6 @@ async def run_stream_ingest(
             for task in done:
                 inflight.remove(task)
                 result = await task
-                
-                # -----------------------------
-                #  RPC error processing
-                # -----------------------------
-                if isinstance(result, RpcErrorResult):
-                    # 失败 → 标记 RangeRecord 并重试
-                    meta = result.meta
-                    range_id = meta.extra["range_id"]
-                    
-                    retry_ok = registry.mark_retry(
-                        range_id,
-                        error=str(result.error),
-                    )
-                    log.warning(
-                        "❌ rpc_range_failed",
-                        extra={
-                            "range_id": range_id,
-                            "retry": registry.get(range_id).retry,
-                            "error": str(result.error),
-                        },
-                    )
-                    # 重新提交该 range（换 RPC）
-                    if retry_ok:
-                        r = registry.get(range_id)
-                        inflight.add(await submit_range(scheduler, registry, r))
-                    else:
-                        registry.mark_failed(range_id, str(result.error))
-
-                    continue # 跳过下面成功处理逻辑
 
                 # ----------成功 RPC，解包, 顺序消费 ----------  
                 block, rpc, key_env, trace, wid, meta = result
@@ -222,6 +192,28 @@ async def run_stream_ingest(
                     task_id=meta.task_id,
                 )
 
+                if rr.logs is None:
+                    # ❗直接处理 retry，不进 ordered_buffer
+                    log.warning(
+                        "⏳ block_not_ready",                             
+                        extra={
+                            "range_id": rr.range_id,
+                            "block": rr.start_block,
+                            "rpc": rr.rpc,
+                        },
+                    )
+
+                    retry_ok = registry.mark_retry(rr.range_id, error="block_not_ready")
+
+                    if retry_ok:
+                        r = registry.get(rr.range_id)
+                        inflight.add(await submit_range(scheduler, registry, r))
+                    else:
+                        registry.mark_failed(rr.range_id, "block_not_ready")
+
+                    continue  # ⬅️ 核心：不进入 ordered_buffer
+                                
+                                
                 ordered_buffer.add(rr)
 
                 # ---------- 顺序消费 ----------
@@ -231,32 +223,6 @@ async def run_stream_ingest(
                     # parse blocks info from RangeResult
                     block = rr.logs
                     
-                    if block is None:
-                        # 这是“正常的未就绪状态”，不是逻辑 bug
-                        log.warning(
-                            "⏳ block_not_ready",
-                            extra={
-                                "range_id": rr.range_id,
-                                "block": rr.start_block,
-                                "rpc": rr.rpc,
-                            },
-                        )
-
-                        # range 失败，走 retry
-                        # block_not_ready 永远不进入 Kafka 事务
-                        retry_ok = registry.mark_retry(
-                            rr.range_id,
-                            error="block_not_ready",
-                        )
-
-                        if retry_ok:
-                            r = registry.get(rr.range_id)
-                            inflight.add(await submit_range(scheduler, registry, r))
-                        else:
-                            registry.mark_failed(rr.range_id, "block_not_ready")
-
-                        continue  # ⬅️ 此时还没进事务，完全安全
-
                     # ===== Kafka EOS =====
                     producer.begin_transaction()
 

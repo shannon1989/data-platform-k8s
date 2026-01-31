@@ -17,34 +17,34 @@ flowchart TD
         direction TB
 
         subgraph BSC_INGEST["BSC Ingestion Pod"]
-            BSC_LOGS["bsc-data-ingestion<br/>Async RPC Ingestion<br/>Blocks / Tx / Logs"]
+            BSC_LOGS["bsc-logs-ingestion<br/>Async RPC Ingestion<br/>Logs"]
+            BSC_BLOCKS["bsc-blocks-ingestion<br/>Async RPC Ingestion<br/>Blocks and Tx"]
         end
 
         subgraph ETH_INGEST["ETH Ingestion Pod"]
-            ETH_LOGS["eth-data-ingestion"]
+            ETH_LOGS["eth-logs-ingestion<br/>eth-blocks-ingestion"]
         end
 
         subgraph SUI_INGEST["SUI Ingestion Pod"]
-            SUI_INGESTION["sui-data-ingestion"]
+            SUI_INGESTION["sui-events-ingestion<br/>sui-checkpoints-ingestion"]
         end
     end
 
     %% =====================
     %% Kafka Layer
     %% =====================
-    %% subgraph KAFKA["Kafka Cluster "]
-
+    subgraph KAFKA["Kafka Cluster "]
 
         subgraph KAFKA_RAW_TOPICS["Kafka - Raw Topics"]
-        RAW_TOPICS["bsc._state<br/>bsc.blocks<br/>bsc.transactions.raw<br/>bsc.logs.raw<br/>..."]
+        RAW_TOPICS["bsc.watermark<br/>bsc.blocks<br/>bsc.transactions.raw<br/>bsc.logs.raw<br/>..."]
         end
 
 
         subgraph KAFKA_TRANS_TOPICS["Kafka - Transformed Topics "]
 
-        TRANS_TOPICS["Transformed Topics<br/>bsc.logs.refined<br/>bsc.transactions.refined<br/>..."]
+        TRANS_TOPICS["Transformed Topics<br/>bsc.flink.logs.cleaned<br/>bsc.flink.transactions.cleaned<br/>..."]
         end
-    %% end
+    end
 
     %% =====================
     %% Flink Stream Processing
