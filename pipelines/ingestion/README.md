@@ -107,15 +107,6 @@ spec:
   strategy:
     type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod）Kafka EOS 安全
 
-Loki安装：
-```bash
-helm install loki grafana/loki-stack \
-  --namespace prometheus \
-  --set grafana.enabled=false \
-  --set promtail.enabled=true
-```
-
-
 ## Data modeling
 
 bsc_blocks (only blocks without full transactions)

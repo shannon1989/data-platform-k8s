@@ -157,15 +157,24 @@
   - Add blocks/tx ingestion job - web3_realtime_blocks.py
   - Show metrics of bsc_realtime_blocks
 
+## [1.0.6] - 2026-01-31
+### Changed
+  - Bug fix for web3_realtime_blocks.py
+    - remove unused rpcErrorResult module
+    - move block_not_ready module before the orderedCache
+    - Tweak the number of inflight range for web3_realtime_blocks.py
+
+## [1.0.7] - 2026-02-01
+### Changed
+  - Introduce Elasticsearch / Kibana
+  - Introduce PyFlink and FlinkSQL 
+    - [Hands-On Introduction to Apache Flink Table API in Python](https://www.youtube.com/watch?v=rLXZQnBNg7E&list=PLL2hlSFBmWwx8AayxvaYaFZ7jibd7FD3d)
+
+
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned
-- Adaptive range size for different RPC.
-- Adaptive key_concurrency_per_batch.
-- Output logs with rpc key_env
-- Resolve RPC with extreming long latency
-- Add Python Queue for Kafka backpressure.
-- Add proxy router for RPC.
+- Add proxy router for RPC(mainly for backfill).
 - Blockchain logs data model in Iceberg
 - SparkOperator for structured streaming
 - Lakehouse layer design (partition table - bronze/silver/gold)

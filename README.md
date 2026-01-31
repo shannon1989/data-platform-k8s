@@ -14,7 +14,7 @@ A modern data platform on Kubernetes integrating batch and streaming processing,
 - SQL-based analytics and BI visualization
 - Local-first development using Minikube
 
-This project focuses on **practical, reproducible, and production-aligned setups**, rather than toy examples.
+This project focuses on **practical, reproducible, and production-aligned setups**.
 
 ---
 
@@ -35,7 +35,8 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
   - Docker
 
 - **Data Processing**
-  - Apache Spark (Spark Operator)
+  - Apache Spark (Spark Operator / micro-batch/near-realtime processing)
+  - Apache Flink (realtime processing)
   - Batch & Streaming Jobs
 
 - **Workflow Orchestration**
@@ -45,10 +46,12 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
   - Apache Kafka (Strimzi)
 
 - **Storage**
+  - Iceberg - OpenTableFormat
   - MinIO (S3-compatible object storage)
 
 - **Analytics & BI**
   - Metabase
+  - ClickHouse
 
 ---
 
@@ -56,10 +59,9 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
 
 ```text
 data-platform-k8s/
-├── infra/        # Airflow, Spark, Kafka, MinIO, Metabase, ClickHouse, Prometheus, Grafana
-├── images/       # Custom Docker images (Spark, ClickHouse, Airflow)
-├── scripts/      # Deployment and operational scripts
-├── examples/     # Example Spark jobs and ETL pipelines
+├── infra/        # Airflow, Spark, Kafka, MinIO, Metabase, ClickHouse, Prometheus, Grafana, Jupyter Notebook
+├── pipelines/    # Blockchain data streaming ingestion with async RPC call
+├── dags/         # Airflow dags
 ├── docs/         # Architecture and design documents
 └── env/          # Environment-specific configs (local/dev/prod)
 ```

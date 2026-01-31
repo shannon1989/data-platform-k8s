@@ -11,10 +11,16 @@ data:
           "chain_id": 56,
           "network": "mainnet",
           "type": "evm",
+          "method_groups": {
+            "heavy": ["eth_getLogs"],
+            "medium": ["eth_getBlockByNumber"],
+            "light": ["eth_blockNumber"]
+          },
           "providers": [
             {
               "name": "blockpi",
               "base_url": "https://bsc.blockpi.network/v1/rpc",
+              "method_groups": ["heavy"],
               "api_key_env": ["BLOCKPI_BSC_KEY_A", "BLOCKPI_BSC_KEY_B"],
               "weight": 8,
               "enabled": true
@@ -22,6 +28,7 @@ data:
             {
               "name": "alchemy",
               "base_url": "https://bnb-mainnet.g.alchemy.com/v2",
+              "method_groups": ["light", "medium"],
               "api_key_env": ["ALCHEMY_API_KEY_A", "ALCHEMY_API_KEY_B"],
               "weight": 8,
               "enabled": false
@@ -36,6 +43,7 @@ data:
           "providers": [
             {
               "name": "infura",
+              "method_groups": ["heavy"],
               "base_url": "https://base-mainnet.infura.io/v3",
               "api_key_env": ["INFURA_API_KEY_A", "INFURA_API_KEY_B"],
               "weight": 8,
@@ -43,6 +51,7 @@ data:
             },        
             { 
               "name": "public-publicnode.com",
+              "method_groups": ["light"],
               "base_url": "https://bsc-mainnet.gateway.tatum.io",
               "weight": 10,
               "enabled": false
@@ -50,6 +59,7 @@ data:
             {
               "name": "public-1rpc.io",
               "base_url": "https://1rpc.io/base",
+              "method_groups": ["light"],
               "weight": 10,
               "enabled": true
             }
