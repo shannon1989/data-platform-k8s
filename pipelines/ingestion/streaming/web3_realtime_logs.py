@@ -7,9 +7,10 @@ from prometheus_client import start_http_server
 from confluent_kafka import KafkaException
 from src import RangeResult, RangeRegistry, TailingRangePlanner, OrderedResultBuffer
 from src.logging import log
+from src.state import load_last_state
 from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.kafka_utils import init_producer, get_serializers
-from src.web3_utils import current_utctime
+from src.web3_utils import current_utctime, decide_resume_plan
 from src.metrics import MetricsContext
 from src.metrics.runtime import set_current_metrics, get_metrics
 from src.tracking import LatestBlockTracker
@@ -20,7 +21,7 @@ from src.tracking import LatestBlockTracker
 RUN_ID = os.getenv("RUN_ID", str(uuid.uuid4()))
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # refresh interval of latest block number
 CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
-
+RESUME_FROM_CHECKPOINT = os.getenv("RESUME_FROM_CHECKPOINT", "True").lower() in ("1", "true", "yes")
 # -----------------------------
 # Kafka and Job Name
 # -----------------------------
@@ -30,7 +31,12 @@ SUBJECT = "logs"
 
 # Transactional setting
 JOB_NAME = f"realtime_{SUBJECT}"
-TRANSACTIONAL_ID = f"{DOMAIN}.{CHAIN}.{ROLE}.{JOB_NAME}.{current_utctime()}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+JOB_START_TIME = current_utctime()
+
+POD_UID = os.getenv("POD_UID", "unknown-pod")
+POD_NAME = os.getenv("POD_NAME", "unknown-pod")
+
+TRANSACTIONAL_ID = f"{DOMAIN}.{CHAIN}.{ROLE}.{JOB_NAME}.{POD_UID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
@@ -39,7 +45,7 @@ SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 BLOCKS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.blocks.raw"
 LOGS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.logs.raw"
 TXS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.transactions.raw"
-STATE_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.watermark"
+STATE_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}._state"
 
 # -----------------------------
 # RPC Config
@@ -99,7 +105,7 @@ async def run_stream_ingest(
     rpc_pool,
     producer,
     max_inflight_ranges: int = MAX_INFLIGHT_RANGE,
-    job_name,
+    job_info,
 ):
     try:
         # -----------------------------
@@ -127,7 +133,6 @@ async def run_stream_ingest(
         # -----------------------------
         # Control plane / Ordering / Inflight Window
         # -----------------------------
-        # planner = TailingRangePlanner(start_block, range_size)
         registry = RangeRegistry()
         ordered_buffer = OrderedResultBuffer()
         inflight: set[asyncio.Task] = set()
@@ -257,7 +262,7 @@ async def run_stream_ingest(
                             
                             log_record = {
                                 "block_height": bn,
-                                "job_name": job_name,
+                                "job_name": JOB_NAME,
                                 "run_id": RUN_ID,
                                 "raw": json.dumps(tx),
                             }
@@ -280,17 +285,26 @@ async def run_stream_ingest(
                     last_committed_block = rr.end_block
                     
                     state_record = {
-                        "run_id": f"{RUN_ID}",
+                        "checkpoint": last_committed_block,
                         "current_range": {
                             "start": rr.start_block,
                             "end": rr.end_block,
                         },
-                        "checkpoint": last_committed_block,
+                        "producer": {
+                            "pod_uid": POD_UID,
+                            "pod_name": POD_NAME
+                        },
+                        "run": {
+                            "run_id": f"{RUN_ID}",
+                            "mode": job_info["mode"],
+                            "started_at": JOB_START_TIME,
+                            "start_block" : job_info["start_block"]
+                        },
                     }
                     
                     producer.produce(
                         STATE_TOPIC,
-                        key=job_name,
+                        key=JOB_NAME,
                         value=state_value_serializer(
                             state_record,
                             SerializationContext(
@@ -373,16 +387,31 @@ async def main():
     if isinstance(latest_block, str):
         latest_block = int(latest_block, 16)
 
-    start_block = latest_block
-    job_name = f"{JOB_NAME}_{latest_block}"
+    last_state = None
+    if RESUME_FROM_CHECKPOINT:
+        last_state = load_last_state(
+            job_name=JOB_NAME,
+            kafka_broker=KAFKA_BROKER,
+            state_topic=STATE_TOPIC,
+            schema_registry_url=SCHEMA_REGISTRY_URL,
+        )
 
+    start_block, resume_mode = decide_resume_plan(
+        resume_from_checkpoint=RESUME_FROM_CHECKPOINT,
+        last_state=last_state,
+        latest_block=latest_block
+    )
+    
+    job_info = {"mode": f"{resume_mode}_resume", "start_block": start_block}
+    
     log.info(
         "▶️ job_start",
         extra={
             "chain": CHAIN,
-            "job": job_name,
+            "job": JOB_NAME,
             "range_size": RANGE_SIZE,
-            "start_block": start_block
+            "start_block": job_info["start_block"],
+            "mode": job_info["mode"],
         },
     )
     
@@ -392,7 +421,7 @@ async def main():
         planner=planner,
         rpc_pool=rpc_pool,
         producer=producer,
-        job_name=job_name
+        job_info=job_info
         )
 
 if __name__ == "__main__":

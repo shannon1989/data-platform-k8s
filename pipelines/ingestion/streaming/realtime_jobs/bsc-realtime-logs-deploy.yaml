@@ -11,8 +11,8 @@ metadata:
     
 spec:
   replicas: 1
-  # strategy:
-    # type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod
+  strategy:
+    type: Recreate # 强制单实例 + 串行切换 （先 kill 旧 Pod，再建新 Pod
     #  kill old takes time and ingestion continus while the pod is in terminating status, ingestion paused for 1 sec only
   selector:
     matchLabels:
@@ -25,10 +25,10 @@ spec:
         chain: bsc
     spec:
       restartPolicy: Always
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.0.6
+          image: web3-stream-ingestion:1.0.7
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_realtime_logs.py"]
 
@@ -43,11 +43,24 @@ spec:
             # RANGE_SIZE <= 3 to reduce latency between checkping and chain_head
             # -----------------------------
             - name: RANGE_SIZE
-              value: "3"
+              value: "5"
 
             - name: RPC_MAX_INFLIGHT
               value: "5"
       
+            - name: RESUME_FROM_CHECKPOINT
+              value: "true"
+            
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
           # -----------------------------
           # Metrics endpoint
           # -----------------------------

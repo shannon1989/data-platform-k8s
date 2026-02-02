@@ -1,0 +1,50 @@
+{
+  "type": "record",
+  "name": "IngestionState",
+  "namespace": "blockchain.ingestion.state",
+  "doc": "Ingestion progress and control state for blockchain pipelines",
+  "fields": [
+    {
+      "name": "checkpoint",
+      "type": "long"
+    },
+
+    {
+      "name": "current_range",
+      "type": {
+        "type": "record",
+        "name": "BlockRange",
+        "fields": [
+          { "name": "start", "type": "long" },
+          { "name": "end", "type": "long" }
+        ]
+      }
+    },
+    
+    {
+      "name": "producer",
+      "type": {
+        "type": "record",
+        "name": "ProducerMeta",
+        "fields": [
+          { "name": "pod_uid", "type": "string" },
+          { "name": "pod_name", "type": "string" }
+        ]
+      }
+    },
+
+    {
+      "name": "run",
+      "type": {
+        "type": "record",
+        "name": "RunStatus",
+        "fields": [
+          { "name": "run_id", "type": "string" },
+          { "name": "mode", "type": "string" },
+          { "name": "started_at", "type": "string", "doc": "ISO-8601 ingestion timestamp" },
+          { "name": "start_block", "type": "long" }
+        ]
+      }
+    }
+  ]
+}

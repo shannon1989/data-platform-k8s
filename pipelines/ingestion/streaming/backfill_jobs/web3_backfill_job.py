@@ -389,6 +389,7 @@ async def main():
         # ✅ 正常 resume
         start_block = last_state["checkpoint"] + 1
         job_name = JOB_NAME
+        resume_mode = "checkpoint"
 
     else:
         # 🆕 state 不存在 → 从链最新 block 开始
@@ -406,7 +407,7 @@ async def main():
 
         start_block = latest_block
         job_name = f"{JOB_NAME}_{latest_block}"
-
+        resume_mode = "chain_head"
 
     log.info(
         "▶️job_start",
@@ -416,7 +417,7 @@ async def main():
             "range_size": RANGE_SIZE,
             "log_size" : BATCH_TX_SIZE,
             "start_block": start_block,
-            "resume_mode": RESUME_MODE
+            "resume_mode": resume_mode
         },
     )
     

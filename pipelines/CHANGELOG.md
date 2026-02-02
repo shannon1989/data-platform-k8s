@@ -164,12 +164,11 @@
     - move block_not_ready module before the orderedCache
     - Tweak the number of inflight range for web3_realtime_blocks.py
 
-## [1.0.7] - 2026-02-01
+## [1.0.7] - 2026-02-02
 ### Changed
+  - Introduce Flink
+  - Introduce PyFlink and FlinkSQL
   - Introduce Elasticsearch / Kibana
-  - Introduce PyFlink and FlinkSQL 
-    - [Hands-On Introduction to Apache Flink Table API in Python](https://www.youtube.com/watch?v=rLXZQnBNg7E&list=PLL2hlSFBmWwx8AayxvaYaFZ7jibd7FD3d)
-
 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
