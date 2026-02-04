@@ -164,11 +164,9 @@
     - move block_not_ready module before the orderedCache
     - Tweak the number of inflight range for web3_realtime_blocks.py
 
-## [1.0.7] - 2026-02-02
+## [1.0.7] - 2026-02-03
 ### Changed
-  - Introduce Flink
-  - Introduce PyFlink and FlinkSQL
-  - Introduce Elasticsearch / Kibana
+  - transaction data normalization
 
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
@@ -182,3 +180,4 @@
 - Blockchain logs data deep analysis (batch and realtime)
 - Bring Flink for realtime analysis.
 - Add blocks/Tx/Receipts and orchestrated through Airflow
+- Introduce Elasticsearch / Kibana

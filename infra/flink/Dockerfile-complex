@@ -1,0 +1,59 @@
+FROM flink:1.20
+
+# 安装 Python
+USER root
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip python3-venv && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    python --version
+
+# 安装 PyFlink（版本一定要匹配 Flink）
+RUN pip3 install apache-flink==1.20
+
+# Kafka SQL connector
+RUN wget -P /opt/flink/lib \
+  https://repo1.maven.org/maven2/org/apache/flink/flink-sql-connector-kafka/3.4.0-1.20/flink-sql-connector-kafka-3.4.0-1.20.jar && \
+  wget -P /opt/flink/lib \
+  https://repo1.maven.org/maven2/org/apache/flink/flink-json/1.20.0/flink-json-1.20.0.jar
+
+
+ENV FLINK_VERSION=1.20.3
+ENV AVRO_VERSION=1.11.3
+ENV JACKSON_VERSION=2.15.3
+
+RUN mkdir -p /opt/flink/lib && \
+    # Flink Avro
+    curl -L -o /opt/flink/lib/flink-avro-${FLINK_VERSION}.jar \
+      https://repo1.maven.org/maven2/org/apache/flink/flink-avro/${FLINK_VERSION}/flink-avro-${FLINK_VERSION}.jar && \
+    curl -L -o /opt/flink/lib/flink-avro-confluent-registry-${FLINK_VERSION}.jar \
+      https://repo1.maven.org/maven2/org/apache/flink/flink-avro-confluent-registry/${FLINK_VERSION}/flink-avro-confluent-registry-${FLINK_VERSION}.jar && \
+    \
+    # Avro runtime
+    curl -L -o /opt/flink/lib/avro-${AVRO_VERSION}.jar \
+      https://repo1.maven.org/maven2/org/apache/avro/avro/${AVRO_VERSION}/avro-${AVRO_VERSION}.jar && \
+    \
+    # Jackson (Avro 必须)
+    curl -L -o /opt/flink/lib/jackson-core-${JACKSON_VERSION}.jar \
+      https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/${JACKSON_VERSION}/jackson-core-${JACKSON_VERSION}.jar && \
+    curl -L -o /opt/flink/lib/jackson-databind-${JACKSON_VERSION}.jar \
+      https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/${JACKSON_VERSION}/jackson-databind-${JACKSON_VERSION}.jar && \
+    curl -L -o /opt/flink/lib/jackson-annotations-${JACKSON_VERSION}.jar \
+      https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/${JACKSON_VERSION}/jackson-annotations-${JACKSON_VERSION}.jar && \
+    \
+    # Compression
+    curl -L -o /opt/flink/lib/commons-compress-1.26.1.jar \
+      https://repo1.maven.org/maven2/org/apache/commons/commons-compress/1.26.1/commons-compress-1.26.1.jar && \
+    curl -L -o /opt/flink/lib/snappy-java-1.1.10.5.jar \
+      https://repo1.maven.org/maven2/org/xerial/snappy/snappy-java/1.1.10.5/snappy-java-1.1.10.5.jar
+
+ARG CONFLUENT_VERSION=5.5.12
+
+RUN set -eux; \
+  curl -fLo /opt/flink/lib/kafka-schema-registry-client-${CONFLUENT_VERSION}.jar \
+    https://packages.confluent.io/maven/io/confluent/kafka-schema-registry-client/${CONFLUENT_VERSION}/kafka-schema-registry-client-${CONFLUENT_VERSION}.jar; \
+  curl -fLo /opt/flink/lib/common-config-${CONFLUENT_VERSION}.jar \
+    https://packages.confluent.io/maven/io/confluent/common-config/${CONFLUENT_VERSION}/common-config-${CONFLUENT_VERSION}.jar; \
+  curl -fLo /opt/flink/lib/common-utils-${CONFLUENT_VERSION}.jar \
+    https://packages.confluent.io/maven/io/confluent/common-utils/${CONFLUENT_VERSION}/common-utils-${CONFLUENT_VERSION}.jar
+
+USER flink

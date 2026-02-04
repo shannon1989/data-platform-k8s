@@ -32,8 +32,8 @@ port_forward() {
 # Monitoring (9090-9093)
 port_forward prometheus prometheus svc/prometheus-kube-prometheus-prometheus 9090:9090
 port_forward grafana prometheus svc/prometheus-grafana 3000:80
-port_forward kubernetes-dashboard kubernetes-dashboard svc/kubernetes-dashboard 9092:9090
-port_forward headlamp kube-system svc/kube-system 9093:4466
+# port_forward kubernetes-dashboard kubernetes-dashboard svc/kubernetes-dashboard 9092:9090
+# port_forward headlamp kube-system svc/kube-system 9093:4466
 
 
 # Minio (9001)
@@ -41,7 +41,7 @@ port_forward minio airflow svc/minio 9001:9001
 
 # Orchestration (8081-8082)
 port_forward airflow airflow svc/airflow-api-server 8081:8080
-port_forward dagster dagster svc/dagster-webserver 8082:80
+# port_forward dagster dagster svc/dagster-webserver 8082:80
 
 # Kafka Web Console (8086)
 port_forward redpanda-console kafka svc/redpanda-console 8086:8080

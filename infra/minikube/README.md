@@ -53,3 +53,13 @@ kubectl logs -n kube-system deploy/headlamp
 minikube ip
 
 minikube addons enable ingress
+
+✅ 1️⃣ 用 minikube stop 而不是关机（强烈建议）
+minikube stop
+# 第二天
+minikube start
+
+✅ 2️⃣ 不用就 pause（最快）
+minikube pause
+# 恢复
+minikube unpause

@@ -331,3 +331,5 @@ This ingestion schema provides:
 * A future-proof foundation for **multi-chain ingestion**
 
 It is suitable for production-grade blockchain data platforms.
+
+
