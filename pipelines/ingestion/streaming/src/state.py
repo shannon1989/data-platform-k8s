@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 
 def load_last_state(
     *,
-    job_name: str,
+    state_key: str,
     kafka_broker: str,
     state_topic: str,
     schema_registry_url: str,
@@ -20,14 +20,14 @@ def load_last_state(
 
     consumer = Consumer({
         "bootstrap.servers": kafka_broker,
-        "group.id": f"state-reader-{job_name}",
+        "group.id": f"state-reader-{state_key}",
         "auto.offset.reset": "earliest",
         "enable.auto.commit": False,
         "isolation.level": "read_committed",
     })
 
     consumer.assign([TopicPartition(state_topic, 0)])
-    target_key = job_name.encode("utf-8")
+    target_key = state_key.encode("utf-8")
 
     latest_state = None
 

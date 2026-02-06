@@ -1,6 +1,5 @@
 # ClickHouse non-HA deployement and Prometheus config
   
-
 ## 1. Create clickhouse namespace
 ```bash
 kubectl create ns clickhouse
@@ -26,3 +25,9 @@ chi.yaml
 **How to install ss, ping, nc inside POD for debuging:**
 apt-get update && \
 apt-get install -y iproute2 iputils-ping netcat-openbsd
+
+
+kubectl port-forward -n clickhouse svc/clickhouse-analytics-ch 8123:8123
+
+### create cluster level database:
+create database bsc on cluster analytics;

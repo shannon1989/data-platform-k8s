@@ -23,29 +23,26 @@ POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # refresh interval of lat
 CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
 RESUME_FROM_CHECKPOINT = os.getenv("RESUME_FROM_CHECKPOINT", "True").lower() in ("1", "true", "yes")
 # -----------------------------
-# Kafka and Job Name
+# Kafka / Job Name / Transactional setting
 # -----------------------------
-DOMAIN = "blockchain"
-ROLE = "ingestion"
-SUBJECT = "logs"
-
-# Transactional setting
-JOB_NAME = f"realtime_{SUBJECT}"
 JOB_START_TIME = current_utctime()
 
 POD_UID = os.getenv("POD_UID", "unknown-pod")
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
+JOB_NAME = "logs:realtime"
 
-TRANSACTIONAL_ID = f"{DOMAIN}.{CHAIN}.{ROLE}.{JOB_NAME}.{POD_UID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
+STATE_KEY = f"{CHAIN}:{JOB_NAME}"
+
+TRANSACTIONAL_ID = f"{STATE_KEY}.{POD_UID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 
 KAFKA_BROKER = "redpanda.kafka.svc:9092"
 SCHEMA_REGISTRY_URL = "http://redpanda.kafka.svc:8081"
 
 # Kafka Topics
-BLOCKS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.blocks.raw"
-LOGS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.logs.raw"
-TXS_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}.transactions.raw"
-STATE_TOPIC = f"{DOMAIN}.{CHAIN}.{ROLE}._state"
+BLOCKS_TOPIC = f"blockchain.{CHAIN}.ingestion.blocks.raw"
+LOGS_TOPIC = f"blockchain.{CHAIN}.ingestion.logs.raw"
+TXS_TOPIC = f"blockchain.{CHAIN}.ingestion.transactions.raw"
+STATE_TOPIC = "blockchain.ingestion._state"
 
 # -----------------------------
 # RPC Config
@@ -101,11 +98,11 @@ async def submit_range(scheduler, registry, r):
 
 async def run_stream_ingest(
     *,
-    planner,
+    start_block,
     rpc_pool,
     producer,
     max_inflight_ranges: int = MAX_INFLIGHT_RANGE,
-    job_info,
+    run_mode,
 ):
     try:
         # -----------------------------
@@ -130,6 +127,8 @@ async def run_stream_ingest(
             max_queue=MAX_QUEUE,
         )
 
+        planner = TailingRangePlanner(start_block, RANGE_SIZE)
+        
         # -----------------------------
         # Control plane / Ordering / Inflight Window
         # -----------------------------
@@ -286,25 +285,21 @@ async def run_stream_ingest(
                     
                     state_record = {
                         "checkpoint": last_committed_block,
-                        "current_range": {
-                            "start": rr.start_block,
-                            "end": rr.end_block,
-                        },
                         "producer": {
                             "pod_uid": POD_UID,
                             "pod_name": POD_NAME
                         },
                         "run": {
                             "run_id": f"{RUN_ID}",
-                            "mode": job_info["mode"],
+                            "mode": run_mode,
                             "started_at": JOB_START_TIME,
-                            "start_block" : job_info["start_block"]
+                            "start_block" : start_block
                         },
                     }
                     
                     producer.produce(
                         STATE_TOPIC,
-                        key=JOB_NAME,
+                        key=STATE_KEY,
                         value=state_value_serializer(
                             state_record,
                             SerializationContext(
@@ -390,7 +385,7 @@ async def main():
     last_state = None
     if RESUME_FROM_CHECKPOINT:
         last_state = load_last_state(
-            job_name=JOB_NAME,
+            state_key=STATE_KEY,
             kafka_broker=KAFKA_BROKER,
             state_topic=STATE_TOPIC,
             schema_registry_url=SCHEMA_REGISTRY_URL,
@@ -402,7 +397,7 @@ async def main():
         latest_block=latest_block
     )
     
-    job_info = {"mode": f"{resume_mode}_resume", "start_block": start_block}
+    run_mode = f"{resume_mode}_resume"
     
     log.info(
         "▶️ job_start",
@@ -410,18 +405,16 @@ async def main():
             "chain": CHAIN,
             "job": JOB_NAME,
             "range_size": RANGE_SIZE,
-            "start_block": job_info["start_block"],
-            "mode": job_info["mode"],
+            "start_block": start_block,
+            "run_mode": run_mode,
         },
     )
     
-    planner = TailingRangePlanner(start_block, RANGE_SIZE)
-    
     await run_stream_ingest(
-        planner=planner,
+        start_block=start_block,
         rpc_pool=rpc_pool,
         producer=producer,
-        job_info=job_info
+        run_mode=run_mode
         )
 
 if __name__ == "__main__":

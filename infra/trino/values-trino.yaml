@@ -1,0 +1,41 @@
+image:
+  tag: 449   # 稳定版，OK，不用 latest
+
+coordinator:
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+worker:
+  replicas: 2
+  resources:
+    requests:
+      cpu: "1"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+additionalCatalogs:
+  iceberg: |
+    connector.name=iceberg
+
+    # ===== Iceberg Catalog =====
+    iceberg.catalog.type=filesystem
+    iceberg.catalog.warehouse=s3a://datalake
+
+    # ===== MinIO / S3 =====
+    fs.native-s3.enabled=true
+    s3.endpoint=http://minio.airflow:9000
+    s3.path-style-access=true
+    s3.ssl.enabled=false
+
+    s3.access-key=minioadmin
+    s3.secret-key=minioadmin
+
+    # ===== Iceberg defaults =====
+    iceberg.file-format=PARQUET

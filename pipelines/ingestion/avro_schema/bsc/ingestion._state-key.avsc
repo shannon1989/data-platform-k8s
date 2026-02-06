@@ -7,7 +7,7 @@
     {
       "name": "state_key",
       "type": "string",
-      "doc": "bsc_realtime_logs / bsc_backfill_blocks"
+      "doc": "bsc:logs:realtime / bsc:transactions:backfill"
     }
   ]
 }

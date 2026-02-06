@@ -52,5 +52,8 @@ port_forward redpanda-schema-registry kafka svc/redpanda 18081:8081
 # Jupyter Pyspark (8888)
 port_forward jupyter airflow svc/jupyter-pyspark 8888:8888
 
+# ClickHouse (8123)
+port_forward clickhouse clickhouse svc/clickhouse-analytics-ch 8123:8123
+
 echo "✅ All port-forwards started"
 echo "📂 Logs & PIDs in ./pids/"

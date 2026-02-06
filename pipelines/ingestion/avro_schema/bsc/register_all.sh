@@ -17,8 +17,8 @@ register () {
 }
 
 # state
-register blockchain.bsc.ingestion._state-key bsc.ingestion._state-key.avsc
-register blockchain.bsc.ingestion._state-value bsc.ingestion._state-value.avsc
+register blockchain.ingestion._state-key ingestion._state-key.avsc
+register blockchain.ingestion._state-value ingestion._state-value.avsc
 
 # blocks
 register blockchain.bsc.ingestion.blocks.raw-key bsc.ingestion.blocks.raw-key.avsc

@@ -203,26 +203,6 @@ Kafka
 Kafka → Spark → ClickHouse ≈ 1–2s
 👉 Spark micro-batch + ClickHouse batch insert = 天作之合
 
-| 需求               | 结论          |
-| ---------------- | ----------- |
-| 100ms 级 SLA      | ❌ Spark 不合适 |
-| 实时告警 / CEP       | ❌ Spark 不合适 |
-| 秒级 BI / 看板       | ✅ Spark 很合适 |
-| 大吞吐写入            | ✅ Spark 很合适 |
-| 复杂 SQL transform | ✅ Spark 很合适 |
-
-```TXT
-Kafka
- ├─ Spark → Iceberg      （事实层 / 回放） - processTime = 60 seconds
- └─ Spark → ClickHouse   （秒级 OLAP）     - processTime = 1 seconds
-```
-
-| 名词            | 行业实际含义        |
-| ------------- | ------------- |
-| Real-time     | <100ms        |
-| Streaming     | <1s           |
-| Near realtime | 几十秒 ~ 几分钟 |
-| Batch         | ≥ 5–10 分钟     |
 
 ```TXT
 Spark DataFrame
@@ -231,3 +211,4 @@ Arrow Columnar Batch（列式内存）
    ↓（零拷贝 / 极少拷贝）
 pandas.DataFrame
 ```
+

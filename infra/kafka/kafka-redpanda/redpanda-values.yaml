@@ -18,7 +18,7 @@ resources:
     cores: 2
   memory:
     container:
-      max: 4Gi
+      max: 6Gi
 
 # =========================================================
 # Storage (StatefulSet PVC)
