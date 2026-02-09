@@ -141,3 +141,37 @@ git config --global user.email "your_email@example.com"
 # validate
 git config --global --list
 ```
+
+### kube-proxy error
+"command failed" err="failed complete: too many open files" to create fsnotify watcher: too many open filesstream closed: EOF for kube-system/kube-proxy-vkr6t (kube-proxy)
+
+```bash
+# fd
+sudo tee /etc/security/limits.d/99-k8s.conf << 'EOF'
+* soft nofile 1048576
+* hard nofile 1048576
+root soft nofile 1048576
+root hard nofile 1048576
+EOF
+
+# inotify
+sudo tee /etc/sysctl.d/99-k8s-inotify.conf << 'EOF'
+fs.inotify.max_user_watches=1048576
+fs.inotify.max_user_instances=8192
+fs.inotify.max_queued_events=65536
+EOF
+
+# apply
+sudo sysctl --system
+
+# re-login
+exit
+ssh mike@your_vm
+
+# confirm
+ulimit -n
+
+# retart Docker + kind nodes
+sudo systemctl restart docker
+docker start $(docker ps -aq --filter "name=kind")
+```

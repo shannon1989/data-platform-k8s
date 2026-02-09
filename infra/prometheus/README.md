@@ -1,6 +1,5 @@
 # Install and config Promethues/Grafana
 
-
 ## 1. Create prometheus namespace
 ```bash
 kubectl create ns prometheus
@@ -30,7 +29,7 @@ grafana:
       defaultDatasourceEnabled: false # Do not create Prometheus datasource by default
 ```
 
-## 4. Install prometheus with customerd value
+## 4. Install prometheus with customed value
 ```bash
 helm install prometheus prometheus-community/kube-prometheus-stack -n prometheus -f values.yaml
 ```
@@ -40,7 +39,7 @@ helm install prometheus prometheus-community/kube-prometheus-stack -n prometheus
 kubectl get secret -n prometheus prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
 ```
 
-## 6. Port forward
+## 6. Port forward (minikube only)
 ```bash
 kubectl port-forward -n prometheus svc/prometheus-grafana 3000:80
 ```

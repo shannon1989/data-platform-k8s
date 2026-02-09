@@ -19,51 +19,18 @@ nodes:
         kind: InitConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "node-role=control-plane"
             system-reserved: "cpu=500m,memory=1Gi"
             kube-reserved: "cpu=500m,memory=1Gi"
             eviction-hard: "memory.available<500Mi"
     extraPortMappings:
-      # Airflow Web UI
-      - containerPort: 8083
-        hostPort: 8083
-      # Grafana UI
-      - containerPort: 3000
-        hostPort: 3000
-      # Prometheus UI
-      - containerPort: 9090
-        hostPort: 9090
-      # Trino UI
-      - containerPort: 8082
-        hostPort: 8082
-      # Kafka redpanda-console
-      - containerPort: 8080
-        hostPort: 8080        
-      # Kafka Schema Registry
-      - containerPort: 8081
-        hostPort: 8081   
-      # Kafka UI
-      - containerPort: 9000
-        hostPort: 9000
-      # MinIO UI
-      - containerPort: 9001
-        hostPort: 9001
-      # ClickHouse HTTP Interface
-      - containerPort: 8123
-        hostPort: 8123
-      # Jupyter
-      - containerPort: 8888
-        hostPort: 8888
-      # Spark UI
-      - containerPort: 8088  
-        hostPort: 8088        
+      - containerPort: 80
+        hostPort: 80
+      - containerPort: 443
+        hostPort: 443
     extraMounts:
       - hostPath: /data/kind/control-plane
         containerPath: /data
 
-  # =========================
-  # Worker 1 (Kafka Broker 1 + ClickHouse Shard 1 + Spark)
-  # =========================
   - role: worker
     image: kindest/node:v1.35.0
     kubeadmConfigPatches:
@@ -71,7 +38,6 @@ nodes:
         kind: JoinConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "node-role=worker,kafka=true,clickhouse-shard=1,spark=true"
             system-reserved: "cpu=500m,memory=1Gi"
             kube-reserved: "cpu=500m,memory=1Gi"
             eviction-hard: "memory.available<1Gi"
@@ -79,9 +45,6 @@ nodes:
       - hostPath: /data/kind/worker1
         containerPath: /data
 
-  # =========================
-  # Worker 2 (Kafka Broker 2 + ClickHouse Shard 2 + Spark)
-  # =========================
   - role: worker
     image: kindest/node:v1.35.0
     kubeadmConfigPatches:
@@ -89,7 +52,6 @@ nodes:
         kind: JoinConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "node-role=worker,kafka=true,clickhouse-shard=2,spark=true"
             system-reserved: "cpu=500m,memory=1Gi"
             kube-reserved: "cpu=500m,memory=1Gi"
             eviction-hard: "memory.available<1Gi"
@@ -97,9 +59,6 @@ nodes:
       - hostPath: /data/kind/worker2
         containerPath: /data
 
-  # =========================
-  # Worker 3 (Kafka Broker 3 + ClickHouse Replica + Spark + Trino + Jupyter)
-  # =========================
   - role: worker
     image: kindest/node:v1.35.0
     kubeadmConfigPatches:
@@ -107,7 +66,6 @@ nodes:
         kind: JoinConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "node-role=worker,kafka=true,clickhouse-shard=1,spark=true,trino=true,jupyter=true"
             system-reserved: "cpu=500m,memory=1Gi"
             kube-reserved: "cpu=500m,memory=1Gi"
             eviction-hard: "memory.available<1Gi"
