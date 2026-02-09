@@ -175,3 +175,39 @@ ulimit -n
 sudo systemctl restart docker
 docker start $(docker ps -aq --filter "name=kind")
 ```
+
+## ingress config
+### install ingress-nginx
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+```
+```bash
+# add label
+kubectl label node kind-control-plane ingress=nginx
+```
+```bash
+# confirm
+kubectl get nodes --show-labels | grep ingress
+```
+```bash
+# install ingress-nginx
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  -n ingress-nginx \
+  --create-namespace \
+  -f ingress-nginx-values.yaml
+```
+
+```TXT
+浏览器
+  ↓
+宿主机 80 / 443
+  ↓  （kind extraPortMappings）
+kind control-plane 容器 (30080 / 30443)
+  ↓
+Ingress Controller（Pod）
+  ↓
+ClusterIP Service
+  ↓
+应用 Pod
+```

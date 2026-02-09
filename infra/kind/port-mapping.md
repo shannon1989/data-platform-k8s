@@ -27,3 +27,20 @@ ClusterIP Service
   ↓
 应用 Pod
 ```
+
+
+```TXT
+grafana.smqj.cc      prometheus.smqj.cc
+        │                     │
+        └────── Cloudflare ───┘
+                     │
+              cloudflared tunnel
+                     │
+        Ubuntu Server（内网）
+                     │
+        Ingress-NGINX (80)
+                     │
+      /grafana      /prometheus
+         │               │
+     Grafana         Prometheus
+```

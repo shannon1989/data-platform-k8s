@@ -12,13 +12,12 @@ grafana:
       enabled: true
       defaultDatasourceEnabled: true
   
-  # grafana ingress
-  grafana.ini:
-    server:
-      root_url: https://grafana.smqj.cc
+  service:
+    type: NodePort
+    nodePort: 30000
 
-# prometheus ingress
+
 prometheus:
-  prometheusSpec:
-    routePrefix: /
-    externalUrl: https://prometheus.smqj.cc
+  service:
+    type: NodePort
+    nodePort: 30090

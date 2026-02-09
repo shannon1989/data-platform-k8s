@@ -31,7 +31,7 @@ grafana:
 
 ## 4. Install prometheus with customed value
 ```bash
-helm install prometheus prometheus-community/kube-prometheus-stack -n prometheus -f values.yaml
+helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n prometheus -f values.yaml
 ```
 
 ## 5. Get your grafana admin user password
