@@ -56,9 +56,13 @@ sudo systemctl enable cloudflared
 3️⃣ 看日志
 journalctl -u cloudflared -f
 
+# 查看status
+sudo systemctl status cloudflared
 
+# validate rules:
+cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate
 
-## Cloudflared Deployment
+## Cloudflared k8s Deployment
 
 ### Disable systemd
 ```bash
@@ -89,3 +93,11 @@ cloudflared tunnel info e82b40ae-deed-40c1-9d8c-6d24347c4ca3
 ```
 
 kubectl -n cloudflared rollout restart deployment cloudflared
+
+
+# windows install cloudflared
+## powershell
+winget install --id Cloudflare.cloudflared
+
+# validate
+winget list cloudflared
