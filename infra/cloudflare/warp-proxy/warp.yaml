@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warp-proxy
+  namespace: build
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: warp-proxy
+  template:
+    metadata:
+      labels:
+        app: warp-proxy
+    spec:
+      containers:
+        - name: warp
+          image: wgcf-squid:local
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+          ports:
+            - containerPort: 3128
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: warp-proxy
+  namespace: build
+spec:
+  selector:
+    app: warp-proxy
+  ports:
+    - port: 3128
+      targetPort: 3128
