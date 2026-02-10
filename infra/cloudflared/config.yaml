@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: cloudflared
+data:
+  config.yml: |
+    tunnel: e82b40ae-deed-40c1-9d8c-6d24347c4ca3
+    credentials-file: /etc/cloudflared/credentials.json
+    protocol: http2
+
+    ingress:
+      - hostname: grafana.smqj.cc
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - hostname: prometheus.smqj.cc
+        service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
+      - service: http_status:404

@@ -55,3 +55,37 @@ sudo systemctl enable cloudflared
 
 3️⃣ 看日志
 journalctl -u cloudflared -f
+
+
+
+## Cloudflared Deployment
+
+### Disable systemd
+```bash
+sudo systemctl stop cloudflared
+sudo systemctl disable cloudflared
+```
+
+1️⃣ 创建 Secret（放 tunnel 凭证）
+```bash
+kubectl create namespace cloudflared
+kubectl create secret generic cloudflared-credentials \
+  -n cloudflared \
+  --from-file=credentials.json=/home/mike/.cloudflared/e82b40ae-deed-40c1-9d8c-6d24347c4ca3.json
+```
+2️⃣ ConfigMap（config.yml）
+```bash
+kubectl apply -f config.yaml
+```
+
+3️⃣ Deployment（高可用）
+```bash
+kubectl apply -f cloudflared.yaml
+```
+
+确认 Tunnel 状态：
+```bash
+cloudflared tunnel info e82b40ae-deed-40c1-9d8c-6d24347c4ca3
+```
+
+kubectl -n cloudflared rollout restart deployment cloudflared

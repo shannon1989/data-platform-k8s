@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: cloudflared
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:2026.2.0
+          args:
+            - tunnel
+            - run
+          volumeMounts:
+            - name: cloudflared-config
+              mountPath: /etc/cloudflared
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: cloudflared-config
+          projected:
+            sources:
+              - configMap:
+                  name: cloudflared-config
+              - secret:
+                  name: cloudflared-credentials
