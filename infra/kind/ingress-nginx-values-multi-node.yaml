@@ -6,6 +6,9 @@ controller:
     enabled: true
     default: true
 
+  nodeSelector:
+    ingress: nginx
+
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"

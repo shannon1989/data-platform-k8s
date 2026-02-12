@@ -27,7 +27,7 @@ sudo vim /etc/cloudflared/config.yml
 ```YAML
 tunnel: abcd-1234-xxxx
 credentials-file: /etc/cloudflared/abcd-1234-xxxx.json
-
+protocol: http2
 ingress:
   - hostname: grafana.smqj.cc
     service: http://localhost:80
@@ -59,10 +59,15 @@ journalctl -u cloudflared -f
 # 查看status
 sudo systemctl status cloudflared
 
+# 重启
+sudo systemctl restart cloudflared
+
 # validate rules:
 cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate
 
-## Cloudflared k8s Deployment
+
+
+# Cloudflared k8s Deployment
 
 ### Disable systemd
 ```bash
@@ -101,3 +106,11 @@ winget install --id Cloudflare.cloudflared
 
 # validate
 winget list cloudflared
+
+
+## 强制停止正在停止中的服务
+sc queryex cloudflared
+taskkill /f /pid 12736
+
+## 删除服务
+sc delete cloudflared

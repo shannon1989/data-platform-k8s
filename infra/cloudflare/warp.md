@@ -15,6 +15,10 @@ sudo apt-get update && sudo apt-get install cloudflare-warp
 # validate service
 sudo systemctl status warp-svc
 
+# enbale auto start
+sudo systemctl enable warp-svc
+
+sudo systemctl start warp-svc
 ## 把你的服务器注册到 Cloudflare WARP 网络(只需要一次)
 warp-cli registration new
 

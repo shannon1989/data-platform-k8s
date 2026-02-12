@@ -10,9 +10,6 @@ data:
     protocol: http2
 
     ingress:
-      - hostname: ssh.smqj.cc
-        service: ssh://localhost:22
-
       - hostname: grafana.smqj.cc
         service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:80
 

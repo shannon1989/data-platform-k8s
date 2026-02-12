@@ -1,0 +1,26 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kind
+
+nodes:
+  # =========================
+  # Control Plane (master)
+  # =========================
+  - role: control-plane
+    image: kindest/node:v1.35.0
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            system-reserved: "cpu=500m,memory=1Gi"
+            kube-reserved: "cpu=500m,memory=1Gi"
+            eviction-hard: "memory.available<500Mi"
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 80
+      - containerPort: 30443
+        hostPort: 443
+    extraMounts:
+      - hostPath: /data/kind/control-plane
+        containerPath: /data
