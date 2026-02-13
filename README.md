@@ -44,6 +44,7 @@ All workflows are orchestrated by Airflow and run natively on Kubernetes.
 
 - **Messaging**
   - Apache Kafka (Strimzi)
+  - RedPanda for simplicity
 
 - **Storage**
   - Iceberg - OpenTableFormat
@@ -67,7 +68,6 @@ data-platform-k8s/
 ```
 
 ---
-
 
 ## 🎯 Design Goals
 
