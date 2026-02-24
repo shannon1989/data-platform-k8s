@@ -37,14 +37,16 @@ spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
 
 build custom image
 ```bash
-eval $(minikube docker-env) # for minikube only
+eval $(minikube docker-env) # for minikube
 docker build -t jupyter-data-platform:0.1.2 .
+
+kind load docker-image jupyter-data-platform:0.1.6 # for kind
 ```
 
 ```bash
-kubectl create ns jupyter-pyspark
+kubectl create ns airflow
 kubectl apply -f jupyter-pvc.yaml
-kubectl apply -f jupyter-pyspark.yaml
+kubectl apply -f jupyter-notebook.yaml
 ```
 
 reload same image tag when the image is rebuid.

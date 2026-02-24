@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REGISTRY_URL="http://localhost:18081" # schema registry port
+REGISTRY_URL="http://localhost:8081" # schema registry port
 
 register () {
   local subject=$1
