@@ -29,9 +29,9 @@ JOB_START_TIME = current_utctime()
 
 POD_UID = os.getenv("POD_UID", "unknown-pod")
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
-JOB_NAME = "logs:realtime"
+JOB_NAME = "realtime_logs"
 
-STATE_KEY = f"{CHAIN}:{JOB_NAME}"
+STATE_KEY = f"{CHAIN}_{JOB_NAME}"
 
 TRANSACTIONAL_ID = f"{STATE_KEY}.{POD_UID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 
@@ -398,7 +398,7 @@ async def main():
     )
     
     run_mode = f"{resume_mode}_resume"
-    
+
     log.info(
         "▶️ job_start",
         extra={
@@ -406,7 +406,7 @@ async def main():
             "job": JOB_NAME,
             "range_size": RANGE_SIZE,
             "start_block": start_block,
-            "run_mode": run_mode,
+            "run_mode": run_mode
         },
     )
     

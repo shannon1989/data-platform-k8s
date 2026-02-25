@@ -168,6 +168,12 @@
 ### Changed
   - transaction data normalization
 
+## [1.0.9] - 2026-02-25
+### Changed
+  - RPC_MAX_TIMEOUT: default timeout updated from 10 to 20s for network unstability during peak time.
+  - Increase max range inflight from 5 to 10 for logs stream ingestion.
+  - realtime_jobs always chase chain head. backfill_job never chase chain head.
+
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned

@@ -29,9 +29,9 @@ JOB_START_TIME = current_utctime()
 
 POD_UID = os.getenv("POD_UID", "unknown-pod")
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
-JOB_NAME = "blocks:realtime"
+JOB_NAME = "realtime_blocks"
 
-STATE_KEY = f"{CHAIN}:{JOB_NAME}"
+STATE_KEY = f"{CHAIN}_{JOB_NAME}"
 
 TRANSACTIONAL_ID = f"{STATE_KEY}.{POD_UID}" # TRANSACTIONAL_ID每次不一样，EOS由Compact State Topic实现
 

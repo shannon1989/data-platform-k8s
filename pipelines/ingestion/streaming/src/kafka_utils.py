@@ -49,7 +49,7 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
     })
     
     log.info(
-        "Kafka_initializing...",
+        "Kafka_initializing",
         extra={
             "bootstrap_servers": KAFKA_BROKER,
             "transactional_id": TRANSACTIONAL_ID,

@@ -27,6 +27,7 @@ def load_last_state(
     })
 
     consumer.assign([TopicPartition(state_topic, 0)])
+    
     target_key = state_key.encode("utf-8")
 
     latest_state = None
