@@ -180,7 +180,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "# max (rate(container_cpu_usage_seconds_total{pod=~\".*ingestion.*\"}[1m]))\r\nrate(container_cpu_usage_seconds_total{pod=~\".*ingestion.*\"}[1m])",
+          "expr": "# max (rate(container_cpu_usage_seconds_total{pod=~\".*ingestion.*\"}[1m]))\r\nmax by (pod) (rate(container_cpu_usage_seconds_total{pod=~\".*ingestion.*\"}[1m]))",
           "hide": false,
           "legendFormat": "{{pod}}",
           "range": true,
@@ -363,7 +363,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "# max (container_memory_working_set_bytes{pod=~\".*ingestion.*\"})\r\n# sum(max by (pod, container)(container_memory_working_set_bytes{pod=~\".*ingestion.*\"})) by (container)\r\ncontainer_memory_working_set_bytes{pod=~\".*ingestion.*\"}",
+          "expr": "# max (container_memory_working_set_bytes{pod=~\".*ingestion.*\"})\r\n# sum(max by (pod, container)(container_memory_working_set_bytes{pod=~\".*ingestion.*\"})) by (container)\r\nmax by (pod) (container_memory_working_set_bytes{pod=~\".*ingestion.*\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "{{pod}}",
@@ -2571,7 +2571,7 @@
     }
   ],
   "preload": false,
-  "refresh": "10s",
+  "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
     "ingestion",
@@ -2601,12 +2601,12 @@
     ]
   },
   "time": {
-    "from": "now-12h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Blockchain Streaming Ingestion Overview",
   "uid": "multi-chain-ingestion",
-  "version": 3
+  "version": 4
 }
