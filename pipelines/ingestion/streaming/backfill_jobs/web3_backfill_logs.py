@@ -21,6 +21,7 @@ from src.tracking import LatestBlockTracker
 RUN_ID = os.getenv("RUN_ID", str(uuid.uuid4()))
 POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "1")) # refresh interval of latest block number
 CHAIN = os.getenv("CHAIN", "bsc").lower() # bsc, eth, base ... from blockchain-rpc-config.yaml
+RESUME_FROM_CHECKPOINT = os.getenv("RESUME_FROM_CHECKPOINT", "True").lower() in ("1", "true", "yes")
 # -----------------------------
 # Kafka / Job Name / Transactional setting
 # -----------------------------
@@ -29,7 +30,6 @@ JOB_START_TIME = current_utctime()
 POD_UID = os.getenv("POD_UID", "unknown-pod")
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
 JOB_NAME = "realtime_logs"
-RUN_MODE = "chain_head_resume"
 
 STATE_KEY = f"{CHAIN}_{JOB_NAME}"
 
@@ -382,22 +382,39 @@ async def main():
     if isinstance(latest_block, str):
         latest_block = int(latest_block, 16)
 
+    last_state = None
+    if RESUME_FROM_CHECKPOINT:
+        last_state = load_last_state(
+            state_key=STATE_KEY,
+            kafka_broker=KAFKA_BROKER,
+            state_topic=STATE_TOPIC,
+            schema_registry_url=SCHEMA_REGISTRY_URL,
+        )
+
+    start_block, resume_mode = decide_resume_plan(
+        resume_from_checkpoint=RESUME_FROM_CHECKPOINT,
+        last_state=last_state,
+        latest_block=latest_block
+    )
+    
+    run_mode = f"{resume_mode}_resume"
+
     log.info(
         "▶️ job_start",
         extra={
             "chain": CHAIN,
             "job": JOB_NAME,
             "range_size": RANGE_SIZE,
-            "start_block": latest_block,
-            "run_mode": RUN_MODE
+            "start_block": start_block,
+            "run_mode": run_mode
         },
     )
     
     await run_stream_ingest(
-        start_block=latest_block,
+        start_block=start_block,
         rpc_pool=rpc_pool,
         producer=producer,
-        run_mode=RUN_MODE
+        run_mode=run_mode
         )
 
 if __name__ == "__main__":

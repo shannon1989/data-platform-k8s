@@ -174,6 +174,10 @@
   - Increase max range inflight from 5 to 10 for logs stream ingestion.
   - realtime_jobs always chase chain head. backfill_job never chase chain head.
 
+## [1.1.0] - 2026-02-27
+### Changed
+  - realtime ingestion - always chase from chain head, run forever
+  - backfill ingestion - resume from checkpoint, job will be finished
 
 ## [x.x.x] - 2026-Jan/Feb/Mar (plan)
 ### planned

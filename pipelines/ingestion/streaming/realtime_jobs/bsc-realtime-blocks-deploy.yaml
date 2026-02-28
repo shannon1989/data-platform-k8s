@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.0.9
+          image: web3-stream-ingestion:1.1.0
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_realtime_blocks.py"]
 
@@ -41,10 +41,7 @@ spec:
 
             - name: RPC_MAX_INFLIGHT
               value: "10"
-              
-            - name: RESUME_FROM_CHECKPOINT
-              value: "false"
-            
+                         
             - name: POD_UID
               valueFrom:
                 fieldRef:
@@ -83,11 +80,11 @@ spec:
           # -----------------------------
           resources:
             requests:
-              cpu: "100m"
-              memory: "100Mi"
+              cpu: "150m"
+              memory: "64Mi"
             limits:
-              cpu: "200m"
-              memory: "200Mi"
+              cpu: "300m"
+              memory: "128Mi"
 
           # livenessProbe:
           #   httpGet:
