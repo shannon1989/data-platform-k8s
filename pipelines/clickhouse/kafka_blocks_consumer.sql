@@ -1,5 +1,5 @@
 --1.create engine table
-CREATE TABLE bsc.blocks_kafka_consumer
+CREATE TABLE bsc.kafka_consumer_blocks
 (
     -- Avro value（完整反序列化）
     -- ========= 业务字段 =========
@@ -18,7 +18,7 @@ SETTINGS
     kafka_num_consumers = 1;
 
 --2. create target table
-CREATE TABLE bsc.blocks_raw
+CREATE TABLE bsc.raw_blocks
 (
     -- ========= 业务字段 =========
     block_height      Int64,
@@ -39,8 +39,8 @@ ORDER BY (block_height, kafka_partition, kafka_offset)
 SETTINGS index_granularity = 8192;
 
 --3. create pipeline materialized view
-CREATE MATERIALIZED VIEW bsc.mv_blocks_raw_pipeline
-TO bsc.blocks_raw
+CREATE MATERIALIZED VIEW bsc.mv_raw_blocks_pipeline
+TO bsc.raw_blocks
 AS
 SELECT
     block_height,
@@ -53,4 +53,4 @@ SELECT
     _offset    AS kafka_offset,
     _timestamp AS kafka_timestamp,
     toDate(_timestamp) AS kafka_date
-FROM bsc.blocks_kafka_consumer;
+FROM bsc.kafka_consumer_blocks;
