@@ -31,15 +31,8 @@ grafana:
       - smqj.cc
 
     path: /grafana(/|$)(.*)
-    pathType: ImplementationSpecific
 
 prometheus:
-  enabled: true
-
-  service:
-    type: ClusterIP
-    port: 9090
-
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -54,35 +47,16 @@ prometheus:
     paths:
       - /prometheus(/|$)(.*)
 
-    pathType: ImplementationSpecific
-
   prometheusSpec:
     routePrefix: /
     externalUrl: https://smqj.cc/prometheus
     retention: 2d
-    scrapeInterval: 30s
 
     resources:
       requests:
-        cpu: 200m
         memory: 300Mi
       limits:
-        cpu: 500m
         memory: 500Mi
 
 alertmanager:
   enabled: false
-
-kube-state-metrics:
-  resources:
-    requests:
-      memory: 50Mi
-    limits:
-      memory: 100Mi
-
-prometheus-node-exporter:
-  resources:
-    requests:
-      memory: 30Mi
-    limits:
-      memory: 50Mi
