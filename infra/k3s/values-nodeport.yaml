@@ -1,0 +1,46 @@
+grafana:
+  enabled: true
+
+  service:
+    type: NodePort
+    port: 80
+    nodePort: 30300   # 合法范围 30000~32767
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 200m
+      memory: 400Mi
+
+  grafana.ini:
+    server:
+      root_url: /
+      serve_from_sub_path: false
+
+  ingress:
+    enabled: false
+
+prometheus:
+  enabled: true
+
+  service:
+    type: NodePort
+    port: 9090
+    nodePort: 30900   # 合法范围 30000~32767
+
+  prometheusSpec:
+    routePrefix: /
+    externalUrl: http://smqj.cc:30900
+    retention: 2d
+    scrapeInterval: 30s
+
+    resources:
+      requests:
+        memory: 300Mi
+      limits:
+        memory: 500Mi
+
+  ingress:
+    enabled: false
