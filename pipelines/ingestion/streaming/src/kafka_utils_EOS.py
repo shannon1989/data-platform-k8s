@@ -20,15 +20,11 @@ def delivery_report(err, msg):
 def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
     producer = Producer({
         "bootstrap.servers": KAFKA_BROKER,
-        "security.protocol": "SSL",
-
-        "ssl.ca.location": "/etc/aiven/ca.pem",
-        "ssl.certificate.location": "/etc/aiven/service.cert",
-        "ssl.key.location": "/etc/aiven/service.key",
         
         # Exactly-once / Transactions
         "enable.idempotence": True,
         "acks": "all",
+        "transactional.id": TRANSACTIONAL_ID, # 在整个 Kafka 集群（cluster）范围内唯一
         
         # retry
         "retries": 1000000,
@@ -55,9 +51,11 @@ def init_producer(TRANSACTIONAL_ID, KAFKA_BROKER):
     log.info(
         "Kafka_initializing",
         extra={
-            "bootstrap_servers": KAFKA_BROKER
+            "bootstrap_servers": KAFKA_BROKER,
+            "transactional_id": TRANSACTIONAL_ID,
         },
     )
+    producer.init_transactions()
     return producer
 
 def get_serializers(SCHEMA_REGISTRY_URL, BLOCKS_TOPIC, STATE_TOPIC, LOGS_TOPIC, TXS_TOPIC):
