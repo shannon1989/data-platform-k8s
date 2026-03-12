@@ -43,10 +43,10 @@ spec:
             # RANGE_SIZE <= 3 to reduce latency between checkping and chain_head
             # -----------------------------
             - name: RANGE_SIZE
-              value: "2"
+              value: "4"
 
             - name: RPC_MAX_INFLIGHT
-              value: "10"
+              value: "3"
             
             - name: RPC_MAX_TIMEOUT
               value: "20"
@@ -95,10 +95,10 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "128Mi"
+              memory: "64Mi"
             limits:
-              cpu: "400m"
-              memory: "256Mi"
+              cpu: "500m"
+              memory: "128Mi"
 
           # livenessProbe:
           #   httpGet:

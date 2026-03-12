@@ -28,9 +28,9 @@ spec:
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.1.0
+          image: cooldina/web3-stream-ingestion:aiven
           imagePullPolicy: IfNotPresent
-          command: ["python", "web3_realtime_blocks.py"]
+          command: ["python", "aiven_web3_realtime_blocks.py"]
 
           # -----------------------------
           # Ingest runtime variables
@@ -40,7 +40,7 @@ spec:
               value: "bsc"
 
             - name: RPC_MAX_INFLIGHT
-              value: "10"
+              value: "3"
                          
             - name: POD_UID
               valueFrom:
@@ -74,6 +74,10 @@ spec:
               mountPath: /etc/ingestion
               readOnly: true
 
+            - name: aiven-access
+              mountPath: /etc/aiven
+              readOnly: true
+
           # -----------------------------
           # (Optional but recommended)
           # Resource limits
@@ -81,10 +85,10 @@ spec:
           resources:
             requests:
               cpu: "200m"
-              memory: "128Mi"
+              memory: "64Mi"
             limits:
-              cpu: "400m"
-              memory: "256Mi"
+              cpu: "500m"
+              memory: "128Mi"
 
           # livenessProbe:
           #   httpGet:
@@ -116,3 +120,7 @@ spec:
         - name: rpc-config
           configMap:
             name: blockchain-rpc-config
+
+        - name: aiven-access
+          secret:
+            secretName: aiven-kafka-access
