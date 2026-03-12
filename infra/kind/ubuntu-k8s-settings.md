@@ -48,8 +48,10 @@ sudo systemctl enable ssh
 ```bash
 ssh-keygen -t ed25519 -C "mike@ubuntuvm"
 ```
-copy id_ed25519 contents to ~/.ssh/authorized_keys
-
+**validate git config**
+```bash
+ssh -T git@github.com
+```
 
 **install vime(nano 是逃生艇，vim 是航母)**
 ```bash
