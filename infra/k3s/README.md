@@ -37,3 +37,16 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
   --create-namespace
 ```
 
+## install kube-prometheus-stack
+
+```bash
+# add helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# install prometheus and grafana (optimized for server with 2G memory)
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  --create-namespace \
+  -f prometheus-grafana-values.yaml
+```
