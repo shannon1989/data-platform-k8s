@@ -16,6 +16,9 @@ sudo k3s kubectl get nodes
 
 ## 设置 kubectl（推荐）
 ```bash
+# update privilege
+sudo chmod 644 /etc/rancher/k3s/k3s.yaml
+
 mkdir -p ~/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sudo chown $USER:$USER ~/.kube/config
