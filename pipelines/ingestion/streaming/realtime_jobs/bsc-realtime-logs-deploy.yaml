@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: web3-stream-ingestion:1.1.0
+          image: cooldina/web3-stream-ingestion:1.1.0
           imagePullPolicy: IfNotPresent
           command: ["python", "web3_realtime_logs.py"]
 
