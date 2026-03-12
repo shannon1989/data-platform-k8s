@@ -9,7 +9,7 @@ sudo ./get-docker.sh
 ### use docker without sudo
 ```bash
 sudo usermod -aG docker $USER
-reboot
+newgrp docker
 ```
 
 ### install helm:
@@ -213,3 +213,14 @@ ClusterIP Service
   ↓
 应用 Pod
 ```
+
+
+## DockerHub push
+### login
+docker login
+
+### build
+docker build -t cooldina/web3-stream-ingestion:1.1.0 .
+
+### push
+docker push cooldina/web3-stream-ingestion:1.1.0
