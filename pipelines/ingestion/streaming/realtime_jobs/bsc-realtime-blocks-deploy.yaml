@@ -43,7 +43,7 @@ spec:
               value: "realtime_blocks"
 
             - name: RPC_MAX_INFLIGHT
-              value: "3"
+              value: "1"
                          
             - name: POD_UID
               valueFrom:
@@ -90,7 +90,7 @@ spec:
               cpu: "200m"
               memory: "64Mi"
             limits:
-              cpu: "500m"
+              cpu: "800m"
               memory: "128Mi"
 
           # livenessProbe:
