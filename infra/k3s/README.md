@@ -48,8 +48,8 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 
 # install prometheus and grafana (optimized for server with 2G memory)
-helm install monitoring prometheus-community/kube-prometheus-stack \
-  -n monitoring \
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  -n prometheus \
   --create-namespace \
-  -f prometheus-grafana-values.yaml
+  -f prometheus-values.yaml
 ```
