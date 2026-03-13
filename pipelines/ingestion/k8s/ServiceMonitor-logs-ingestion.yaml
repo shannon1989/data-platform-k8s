@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: logs-ingestion
-  namespace: monitoring
+  namespace: prometheus
   labels:
     release: prometheus
 spec:
