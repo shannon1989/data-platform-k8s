@@ -111,7 +111,7 @@ async def run_stream_ingest(
         set_current_metrics(metrics_context)
         metrics = get_metrics() 
         
-        # metrics.max_range_inflight_set(MAX_INFLIGHT_RANGE)
+        metrics.max_range_inflight_set(MAX_INFLIGHT_RANGE)
         
         # -----------------------------
         # RPC infra
@@ -253,8 +253,8 @@ async def run_stream_ingest(
                     for bn, txs in logs_by_block.items():
                         total_logs = len(txs)
                         
-                        # metrics.block_processed.inc()
-                        # metrics.tx_processed.inc(total_logs)
+                        metrics.block_processed.inc()
+                        metrics.tx_processed.inc(total_logs)
                         
                         for idx, tx in enumerate(txs):
                             
@@ -325,16 +325,15 @@ async def run_stream_ingest(
                     )
                     
                     # 系统 checkpoint 推进速度
-                    # metrics.tx_per_block.observe(total_logs)
-                    # metrics.block_committed.inc()
-                    # metrics.tx_committed.inc(total_logs)
+                    metrics.tx_per_block.observe(total_logs)
+                    metrics.block_committed.inc()
+                    metrics.tx_committed.inc(total_logs)
 
                     latest_block = latest_tracker.get_cached()
                     if latest_block is not None:
-                        pass
-                        # metrics.chain_latest_block.set(latest_block)
-                        # metrics.checkpoint_block.set(last_committed_block)
-                        # metrics.checkpoint_lag.set(max(0, latest_block - last_committed_block))
+                        metrics.chain_latest_block.set(latest_block)
+                        metrics.checkpoint_block.set(last_committed_block)
+                        metrics.checkpoint_lag.set(max(0, latest_block - last_committed_block))
                 
                 # -----------------------------
                 # Refill inflight window
@@ -409,6 +408,5 @@ async def main():
 
 if __name__ == "__main__":
     # Prometheus metrics endpoint
-    # start_http_server(8000)
+    start_http_server(8000)
     asyncio.run(main())
-    # await main()
