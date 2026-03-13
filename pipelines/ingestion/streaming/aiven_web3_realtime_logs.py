@@ -29,7 +29,7 @@ JOB_START_TIME = current_utctime()
 
 POD_UID = os.getenv("POD_UID", RUN_ID)
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
-JOB_NAME = "realtime_logs"
+JOB_NAME = os.getenv("JOB_NAME", "realtime_logs")
 
 STATE_KEY = f"{CHAIN}_{JOB_NAME}"
 

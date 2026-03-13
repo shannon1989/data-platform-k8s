@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: cooldina/web3-stream-ingestion:aiven
+          image: cooldina/blockchain-kafka-ingestion:0.0.1
           imagePullPolicy: Always
           command: ["python", "aiven_web3_realtime_logs.py"]
 
@@ -38,6 +38,10 @@ spec:
           env:
             - name: CHAIN
               value: "bsc"
+
+            - name: JOB_NAME
+              value: "realtime_logs"
+
             # -----------------------------
             # Parallel execution (BATCH_SIZE = MAX_WORKERS * RANGE_SIZE)
             # RANGE_SIZE <= 3 to reduce latency between checkping and chain_head

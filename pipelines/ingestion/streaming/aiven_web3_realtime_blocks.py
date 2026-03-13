@@ -29,7 +29,7 @@ JOB_START_TIME = current_utctime()
 
 POD_UID = os.getenv("POD_UID", "unknown-pod")
 POD_NAME = os.getenv("POD_NAME", "unknown-pod")
-JOB_NAME = "realtime_blocks"
+JOB_NAME = os.getenv("JOB_NAME", "realtime_blocks").lower()
 RUN_MODE = "chain_head_resume"
 
 STATE_KEY = f"{CHAIN}_{JOB_NAME}"
