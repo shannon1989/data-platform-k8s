@@ -24,12 +24,12 @@ spec:
         app: logs-ingestion
         chain: bsc
     spec:
-      restartPolicy: IfNotPresent #Always
+      restartPolicy: Always
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
           image: cooldina/blockchain-kafka-ingestion:0.0.4
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent #Always
           command: ["python", "aiven_web3_realtime_logs.py"]
 
           # -----------------------------
