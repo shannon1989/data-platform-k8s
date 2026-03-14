@@ -396,6 +396,7 @@ async def main():
             "range_size": RANGE_SIZE,
             "start_block": start_block,
             "run_mode": run_mode,
+            "last_state": last_state,
         },
     )
     
