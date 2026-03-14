@@ -3,16 +3,16 @@ import json
 import uuid
 import asyncio
 from confluent_kafka.serialization import SerializationContext, MessageField
-from prometheus_client import start_http_server
+# from prometheus_client import start_http_server
 from confluent_kafka import KafkaException
-from src import RangeResult, RangeRegistry, TailingRangePlanner, OrderedResultBuffer
+from src import RangeResult, RangeRegistryNoMetrics, TailingRangePlanner, OrderedResultBuffer
 from src.logging import log
 from src.state import load_last_state
-from src.rpc_provider import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
+from src.rpc_provider_no_metrics import Web3AsyncRouter, AsyncRpcClient, AsyncRpcScheduler, RpcPool, RpcErrorResult
 from src.kafka_utils import init_producer, get_serializers
 from src.web3_utils import current_utctime, decide_resume_plan
-from src.metrics import MetricsContext
-from src.metrics.runtime import set_current_metrics, get_metrics
+# from src.metrics import MetricsContext
+# from src.metrics.runtime import set_current_metrics, get_metrics
 from src.tracking import LatestBlockTracker
 
 # -----------------------------
@@ -132,7 +132,7 @@ async def run_stream_ingest(
         # -----------------------------
         # Control plane / Ordering / Inflight Window
         # -----------------------------
-        registry = RangeRegistry()
+        registry = RangeRegistryNoMetrics()
         ordered_buffer = OrderedResultBuffer()
         inflight: set[asyncio.Task] = set()
 

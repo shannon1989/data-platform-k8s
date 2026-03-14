@@ -161,7 +161,7 @@ class RpcKeySlot:
             if  wait > 0:
                 # 语义升级：不是不可用，而是被限速
                 # m().rpc_key_wait_seconds.observe(wait)
-                m().rpc_key_wait_inc(self.key_env)
+                # m().rpc_key_wait_inc(self.key_env)
                 await asyncio.sleep(wait)
 
             # 占用 slot
@@ -388,7 +388,7 @@ class Web3AsyncRouter:
                 p.on_failure()
                 last_error = e
 
-                m().rpc_failed_inc(provider=p.name, key=key_env)
+                # m().rpc_failed_inc(provider=p.name, key=key_env)
                 log.warning(
                     "⚠️ rpc_call_error",
                     extra={
@@ -463,8 +463,8 @@ class AsyncRpcScheduler:
 
         await self.queue.put((method, params, fut, task_meta))
 
-        m().rpc_submitted_inc()
-        m().rpc_queue_size_set(self.queue.qsize())
+        # m().rpc_submitted_inc()
+        # m().rpc_queue_size_set(self.queue.qsize())
 
         return await fut
 
@@ -487,8 +487,8 @@ class AsyncRpcScheduler:
             dispatch_ts = time.time()
 
             queue_wait_ms = (dispatch_ts - meta.submit_ts) * 1000
-            m().rpc_queue_wait_observe(queue_wait_ms)
-            m().rpc_queue_size_set(self.queue.qsize())
+            # m().rpc_queue_wait_observe(queue_wait_ms)
+            # m().rpc_queue_size_set(self.queue.qsize())
 
             # log.info(
             #     "rpc_dispatch",
@@ -513,8 +513,8 @@ class AsyncRpcScheduler:
         async with self.inflight:
             # rpc_start_ts = time.time()
 
-            m().rpc_started.inc()
-            m().rpc_inflight.inc()
+            # m().rpc_started.inc()
+            # m().rpc_inflight.inc()
 
             # log.info(
             #     "rpc_call_start",
@@ -530,11 +530,12 @@ class AsyncRpcScheduler:
                     method, params
                 )
 
-                m().rpc_completed_inc(rpc, key_env)
+                # m().rpc_completed_inc(rpc, key_env)
 
                 if trace and trace.total_ms is not None:
                     # key 级别的问题 用 Counter 看，延迟分布 只看 provider 级
-                    m().rpc_latency_observe(rpc, trace.total_ms)
+                    # m().rpc_latency_observe(rpc, trace.total_ms)
+                    pass
 
                 if not fut.done():
                     fut.set_result(
@@ -576,8 +577,9 @@ class AsyncRpcScheduler:
                         )
                     )
             finally:
-                m().rpc_inflight.dec()
-                m().rpc_finished_inc()
+                pass
+                # m().rpc_inflight.dec()
+                # m().rpc_finished_inc()
 
 
     async def close(self):

@@ -2,6 +2,7 @@
 from src.control.range_status import RangeStatus
 from src.control.range_record import RangeRecord
 from src.control.range_registry import RangeRegistry
+from src.control.range_registry_no_metrics import RangeRegistryNoMetrics
 
 # planning
 from src.planning.block_range import BlockRange
@@ -16,6 +17,7 @@ __all__ = [
     "RangeStatus",
     "RangeRecord",
     "RangeRegistry",
+    "RangeRegistryNoMetrics",
 
     # planning
     "BlockRange",

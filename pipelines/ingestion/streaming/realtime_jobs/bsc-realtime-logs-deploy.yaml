@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 1 # EOS is maintained by state topic
       containers:
         - name: ingestion
-          image: cooldina/blockchain-kafka-ingestion:0.0.2
+          image: cooldina/blockchain-kafka-ingestion:0.0.3
           imagePullPolicy: Always
           command: ["python", "aiven_web3_realtime_logs.py"]
 
@@ -50,7 +50,7 @@ spec:
               value: "4"
 
             - name: RPC_MAX_INFLIGHT
-              value: "1"
+              value: "2"
             
             - name: RPC_MAX_TIMEOUT
               value: "20"
