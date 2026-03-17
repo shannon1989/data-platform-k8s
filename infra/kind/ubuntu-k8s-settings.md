@@ -62,10 +62,47 @@ _-y: "Do you want to continue? [Y/n]" - enter yes automatically_
 **update sshd_config**
 ```bash
 sudo vim /etc/ssh/sshd_config
-```
-```TXT
-PubkeyAuthentication yes
+# or
+sudo vim /etc/ssh/sshd_config.d/99-custom.conf
+# add below
 PasswordAuthentication no
+PubkeyAuthentication yes
+PermitRootLogin no
+# check
+sudo sshd -T | grep -E 'passwordauthentication|pubkeyauthentication'
+cat id_ed25519.pub > authorized_keys
+```
+```bash
+# reload service
+sudo systemctl reload ssh
+```
+
+**Fail2ban**
+```bash
+# install
+sudo apt install fail2ban -y
+# start
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+**k8s preparation**
+```bash
+# chrony
+sudo apt install chrony -y
+# close swap
+sudo swapoff -a
+sudo sed -i '/swap/d' /etc/fstab
+
+# kernel parameter
+sudo tee /etc/sysctl.d/k8s.conf <<EOF
+vm.max_map_count=262144
+fs.file-max=1000000
+net.core.somaxconn=65535
+EOF
+
+# load
+sudo sysctl --system
 ```
 
 ### config local hostname
