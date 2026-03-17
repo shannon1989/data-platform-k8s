@@ -1,9 +1,39 @@
-## install k3s on ubuntu
+## 系统级前置优化
+
+**Fail2ban**
 ```bash
-curl -sfL https://get.k3s.io | sh -
+# install
+sudo apt install fail2ban -y
+# start
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
 ```
 
-## install k3s without Traefik
+**k8s preparation**
+```bash
+# chrony
+sudo apt install chrony -y
+# close swap
+sudo swapoff -a
+sudo sed -i '/swap/d' /etc/fstab
+
+# kernel parameter
+sudo tee /etc/sysctl.d/k8s.conf <<EOF
+vm.max_map_count=262144
+fs.file-max=1000000
+net.core.somaxconn=65535
+EOF
+# load
+sudo sysctl --system
+```
+
+**br_netfilter**
+```bash
+sudo modprobe br_netfilter
+echo br_netfilter | sudo tee /etc/modules-load.d/k8s.conf
+```
+
+## install k3s without Traefik (use ingress-nginx)
 ```bash
 curl -sfL https://get.k3s.io | sh -s - --disable traefik
 ```
@@ -40,8 +70,47 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
   --create-namespace
 ```
 
-## install kube-prometheus-stack
+## install Longhorn (storage layer)
+```bash
+helm repo add longhorn https://charts.longhorn.io
+helm repo update
 
+helm install longhorn longhorn/longhorn \
+  -n longhorn-system \
+  --create-namespace
+
+# update Longhorn default folder
+kubectl edit settings.longhorn.io default-data-path -n longhorn-system
+/data/longhorn
+```
+
+## create directory
+```bash
+sudo mkdir -p /data/k8s
+sudo mkdir -p /data/longhorn
+sudo chmod -R 777 /data
+```
+
+## create namespace
+```bash
+# infra - kafka/clickhouse/minio
+kubectl create ns infra
+
+# compute - spark/flink/airflow
+kubectl create ns compute
+
+# analytics - metabase/trino
+kubectl create ns analytics
+
+# monitoring - prometheus/grafana
+kubectl create ns monitoring
+
+# logging -> Elasticsearch / Logstash / Kibana / Beats
+kubectl create ns logging
+
+```
+
+## install kube-prometheus-stack
 ```bash
 # add helm repo
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts

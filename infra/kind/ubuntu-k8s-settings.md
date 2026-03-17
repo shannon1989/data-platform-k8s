@@ -77,34 +77,6 @@ cat id_ed25519.pub > authorized_keys
 sudo systemctl reload ssh
 ```
 
-**Fail2ban**
-```bash
-# install
-sudo apt install fail2ban -y
-# start
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-```
-
-**k8s preparation**
-```bash
-# chrony
-sudo apt install chrony -y
-# close swap
-sudo swapoff -a
-sudo sed -i '/swap/d' /etc/fstab
-
-# kernel parameter
-sudo tee /etc/sysctl.d/k8s.conf <<EOF
-vm.max_map_count=262144
-fs.file-max=1000000
-net.core.somaxconn=65535
-EOF
-
-# load
-sudo sysctl --system
-```
-
 ### config local hostname
 ```TXT
 Host ubuntus
