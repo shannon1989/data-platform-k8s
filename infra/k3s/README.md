@@ -71,6 +71,13 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
 ```
 
 ## install Longhorn (storage layer)
+
+PVC管理更稳定
+快照
+备份
+卷恢复
+可视化
+
 ```bash
 helm repo add longhorn https://charts.longhorn.io
 helm repo update
@@ -93,7 +100,7 @@ sudo chmod -R 777 /data
 
 ## create namespace
 ```bash
-# infra - kafka/clickhouse/minio
+# infra - kafka/clickhouse
 kubectl create ns infra
 
 # compute - spark/flink/airflow
@@ -108,6 +115,8 @@ kubectl create ns monitoring
 # logging -> Elasticsearch / Logstash / Kibana / Beats
 kubectl create ns logging
 
+# jupyter
+kubectl create ns dev
 ```
 
 ## install kube-prometheus-stack
